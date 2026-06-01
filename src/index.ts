@@ -1,7 +1,8 @@
 import 'dotenv/config';
+import app from './server.js';
 
-async function main() {
-  console.log('AI Funnel Machine starting...');
-}
+const PORT = process.env.PORT ?? 3000;
 
-main().catch(console.error);
+app.listen(PORT, () => {
+  console.log(`AI Funnel Machine listening on port ${PORT}`);
+});
