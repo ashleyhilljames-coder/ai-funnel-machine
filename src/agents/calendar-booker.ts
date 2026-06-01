@@ -1,4 +1,6 @@
+import { google } from 'googleapis';
 import { z } from 'zod';
+import { config } from '../config.js';
 import type { Lead } from '../lead.js';
 
 export const BookingResultSchema = z.object({
@@ -10,14 +12,41 @@ export const BookingResultSchema = z.object({
 
 export type BookingResult = z.infer<typeof BookingResultSchema>;
 
+const DISCOVERY_CALL_DURATION_MINUTES = 30;
+
+async function getCalendarClient() {
+  const auth = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/calendar.events'],
+  });
+  const authClient = await auth.getClient();
+  return google.calendar({ version: 'v3', auth: authClient as Parameters<typeof google.calendar>[0]['auth'] });
+}
+
 export async function CalendarBooker(lead: Lead): Promise<BookingResult> {
-  // Stub: wire to Google Calendar API or Calendly in production
-  console.log(`[CalendarBooker] Booking discovery call for ${lead.email}`);
+  const calendar = await getCalendarClient();
+
+  const startTime = new Date(Date.now() + 48 * 60 * 60 * 1000);
+  const endTime = new Date(startTime.getTime() + DISCOVERY_CALL_DURATION_MINUTES * 60 * 1000);
+
+  const event = await calendar.events.insert({
+    calendarId: config.GOOGLE_CALENDAR_ID,
+    sendUpdates: 'all',
+    requestBody: {
+      summary: `Discovery Call — ${lead.firstName} ${lead.lastName}`,
+      description: `Lead source: ${lead.source}\nFunnel step: ${lead.funnelStep}\nCompany: ${lead.company ?? 'N/A'}`,
+      start: { dateTime: startTime.toISOString() },
+      end: { dateTime: endTime.toISOString() },
+      attendees: [{ email: lead.email }],
+    },
+  });
+
+  const eventId = event.data.id ?? undefined;
+  const scheduledAt = event.data.start?.dateTime ?? undefined;
 
   return {
     booked: true,
-    eventId: `stub-event-${lead.id}`,
-    scheduledAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-    message: `Discovery call scheduled for ${lead.firstName} ${lead.lastName}`,
+    eventId,
+    scheduledAt,
+    message: `Discovery call scheduled for ${lead.firstName} ${lead.lastName} at ${scheduledAt}`,
   };
 }

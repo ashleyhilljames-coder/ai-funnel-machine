@@ -36,6 +36,8 @@ npm install
 | `PUBSUB_TOPIC` | Pub/Sub topic name for lead ingestion |
 | `PUBSUB_SUBSCRIPTION` | Pub/Sub subscription name for lead processing |
 | `ANTHROPIC_API_KEY` | Anthropic API key for AI agents |
+| `GOOGLE_CALENDAR_ID` | Calendar ID to book discovery calls on (e.g. `primary` or `sales@yourcompany.com`) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP service account JSON key (local dev only; not needed on GCP) |
 | `NODE_ENV` | `development` \| `production` \| `test` (default: `development`) |
 | `PORT` | HTTP server port (default: `3000`) |
 
