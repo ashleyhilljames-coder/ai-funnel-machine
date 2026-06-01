@@ -1,4 +1,5 @@
 import type { Lead } from './lead.js';
+import { config } from './config.js';
 import { QualifierAgent, type QualificationResult } from './agents/qualifier.js';
 import { EvaluatorAgent, type EvaluationResult } from './agents/evaluator.js';
 import { CalendarBooker, type BookingResult } from './agents/calendar-booker.js';
@@ -8,7 +9,7 @@ export type ProcessorResult = {
   qualification: QualificationResult;
   evaluation?: EvaluationResult;
   booking?: BookingResult;
-  outcome: 'booked' | 'disqualified' | 'poor-brand-fit';
+  outcome: 'booked' | 'disqualified' | 'poor-brand-fit' | 'booking-skipped';
 };
 
 export async function processLead(lead: Lead): Promise<ProcessorResult> {
@@ -29,6 +30,11 @@ export async function processLead(lead: Lead): Promise<ProcessorResult> {
   }
 
   // Step 3: Book a calendar slot
+  if (config.SKIP_CALENDAR_BOOKING) {
+    console.log('[Processor] Booking skipped (SKIP_CALENDAR_BOOKING=true)');
+    return { lead, qualification, evaluation, outcome: 'booking-skipped' };
+  }
+
   const booking = await CalendarBooker(lead);
   console.log(`[Processor] Booking — booked=${booking.booked} eventId=${booking.eventId}`);
 

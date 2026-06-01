@@ -7,6 +7,7 @@ const envSchema = z.object({
   PUBSUB_SUBSCRIPTION: z.string().min(1),
   ANTHROPIC_API_KEY: z.string().min(1),
   GOOGLE_CALENDAR_ID: z.string().min(1),
+  SKIP_CALENDAR_BOOKING: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 

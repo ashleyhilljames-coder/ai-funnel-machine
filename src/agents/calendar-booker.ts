@@ -30,13 +30,11 @@ export async function CalendarBooker(lead: Lead): Promise<BookingResult> {
 
   const event = await calendar.events.insert({
     calendarId: config.GOOGLE_CALENDAR_ID,
-    sendUpdates: 'all',
     requestBody: {
       summary: `Discovery Call — ${lead.firstName} ${lead.lastName}`,
-      description: `Lead source: ${lead.source}\nFunnel step: ${lead.funnelStep}\nCompany: ${lead.company ?? 'N/A'}`,
+      description: `Lead source: ${lead.source}\nFunnel step: ${lead.funnelStep}\nCompany: ${lead.company ?? 'N/A'}\nLead email: ${lead.email}`,
       start: { dateTime: startTime.toISOString() },
       end: { dateTime: endTime.toISOString() },
-      attendees: [{ email: lead.email }],
     },
   });
 
