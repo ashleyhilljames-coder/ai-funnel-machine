@@ -1,53 +1,48 @@
-import { LeadScraper } from './scrapers/leadScraper';
-import { OutboundSequenceManager } from './sequences/outboundSequence';
+import { OutboundProcessor } from './processor';
 
-function runOutboundTest() {
-  const scraper = new LeadScraper();
-  const sequenceManager = new OutboundSequenceManager();
+async function runIntegratedOutboundTest() {
+  const outboundEngine = new OutboundProcessor();
 
-  // 1. Simulate raw data scraped from the web (one real estate, one contractor!)
-  const rawLeads = [
+  // A live bulk data simulation batch
+  const batchLeads = [
     {
-      businessName: "Vegas Elite Realty Group",
-      contactName: "Sarah Jenkins",
-      email: "SARAH@VEGASELITEREALTY.COM", // Testing lowercase sanitization
-      phone: "702-555-0199",
-      website: "https://vegaseliterealty.com",
-      notes: "Top producing brokerage in Clark County."
+      businessName: "Silver State Realty Advisors",
+      contactName: "David Vance",
+      email: "david@silverstaterealty.com",
+      phone: "702-555-0122",
+      notes: "High volume residential real estate team."
     },
     {
-      businessName: "Desert Flood & Smoke Restoration",
-      contactName: "Mike Ramirez",
-      email: "mike@desertrestoration.com",
-      phone: "702-555-0143",
-      website: "https://desertrestoration.com",
-      notes: "Emergency mitigation contractor."
+      businessName: "Vegas Valley HVAC & Restoration",
+      contactName: "Elena Rostova",
+      email: "ELENA@VEGASVALLEYHVAC.COM",
+      phone: "702-555-0177",
+      notes: "Local mechanical and emergency contracting company."
+    },
+    {
+      businessName: "Broken Data Inc.",
+      contactName: "John Doe",
+      email: "", // This missing email will trigger our processor's validation failure path safely!
     }
   ];
 
-  console.log("🚀 Starting Agentic Nexus Outbound Engine Test...\n");
+  console.log("⚡ Firing Up Integrated Agentic Nexus Outbound Engine...\n");
 
-  // 2. Loop through each raw lead, process it, and generate the email
-  rawLeads.forEach((rawLead, index) => {
-    try {
-      console.log(`--- Processing Lead #${index + 1}: ${rawLead.businessName} ---`);
-      
-      // Sanitize the lead using our scraper tool
-      const cleanProspect = scraper.parseRawLead(rawLead);
-      console.log(`✅ Lead Sanitized! ID Generated: ${cleanProspect.id}`);
-      console.log(`📧 Target Email: ${cleanProspect.email}`);
+  for (let i = 0; i < batchLeads.length; i++) {
+    console.log(`🌀 Processing Batch Item [${i + 1}/${batchLeads.length}]`);
+    
+    const result = await outboundEngine.processRawOutboundLead(batchLeads[i]);
 
-      // Generate the Stage 1 personalized email template
-      const emailMessage = sequenceManager.generateMessage(cleanProspect);
-      console.log(`📝 Generated Outreach Message:\n"${emailMessage}"\n`);
-
-    } catch (error: any) {
-      console.error(`❌ Error processing lead: ${error.message}\n`);
+    if (result.status === 'contacted') {
+      console.log(`✅ Success! Prospect Tracking ID: ${result.prospect.id}`);
+      console.log(`📬 Status Advanced To: ${result.prospect.status}`);
+      console.log(`📨 Live Email Generated:\n"${result.generatedMessage}"\n`);
+    } else {
+      console.error(`❌ Pipeline Warning for ${result.prospect.businessName}: ${result.error}\n`);
     }
-  });
+  }
 
-  console.log("🏁 Test complete. Full pipeline validated successfully!");
+  console.log("🏁 Batch processing simulation complete!");
 }
 
-// Run the test function
-runOutboundTest();
+runIntegratedOutboundTest();
