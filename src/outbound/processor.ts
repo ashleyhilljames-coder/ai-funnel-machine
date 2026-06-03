@@ -34,7 +34,7 @@ export class OutboundProcessor {
       const cleanProspect = this.scraper.parseRawLead(rawData);
       
       // Step 2: Generate the initial outreach sequence message
-      const message = this.sequenceManager.generateMessage(cleanProspect);
+      const message = await this.sequenceManager.generateOutreachMessage(cleanProspect);
       
       // Step 3: Advance the sequence tracking stage to 'Contacted'
       const updatedProspect = this.sequenceManager.advanceStage(cleanProspect);
