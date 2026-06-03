@@ -2,15 +2,15 @@ import 'dotenv/config';
 import { OutboundProcessor } from './src/outbound/processor';
 import { LeadScraper } from './src/outbound/scrapers/leadScraper';
 import { IntakeRouter } from './src/outbound/intakeRouter';
+import { LeadGuard } from './src/outbound/leadGuard'; // Import your guard
 import * as path from 'path';
-import * as fs from 'fs';
 
 async function runMainOutboundPipeline() {
   const outboundEngine = new OutboundProcessor();
   const scraper = new LeadScraper();
   const router = new IntakeRouter();
+  const guard = new LeadGuard(); // Instantiate the Guard
 
-  // 1. Scan for pending files inside the intake/ folder
   const pendingFiles = router.getPendingCSVFiles();
 
   if (pendingFiles.length === 0) {
@@ -25,10 +25,10 @@ async function runMainOutboundPipeline() {
   
   let totalSuccessfulRows = 0;
   let totalFailedRows = 0;
+  let totalSkippedDuplicates = 0;
   const startTime = Date.now();
 
   try {
-    // 2. Loop through every pending file sequentially
     for (const filePath of pendingFiles) {
       const currentFileName = path.basename(filePath);
       console.log(`\n🚀 Starting Processing Queue for file: [${currentFileName}]`);
@@ -38,11 +38,23 @@ async function runMainOutboundPipeline() {
       console.log(`📊 Parsed ${rawLeads.length} records from data source.`);
 
       for (let i = 0; i < rawLeads.length; i++) {
-        console.log(`🌀 Processing row [${i + 1}/${rawLeads.length}]: ${rawLeads[i].businessName}`);
-        const result = await outboundEngine.processRawOutboundLead(rawLeads[i]);
+        const currentLead = rawLeads[i];
+        
+        // 🛡️ DUPLICATE INTERCEPT GUARD
+        if (currentLead.email && guard.isDuplicate(currentLead.email)) {
+          totalSkippedDuplicates++;
+          console.log(`⚠️  [SKIP GUARD] Duplicate detected! Email: ${currentLead.email}. Skipping row safely...`);
+          continue; 
+        }
+
+        console.log(`🌀 Processing row [${i + 1}/${rawLeads.length}]: ${currentLead.businessName}`);
+        const result = await outboundEngine.processRawOutboundLead(currentLead);
 
         if (result.status === 'contacted' && result.sequence) {
           totalSuccessfulRows++;
+          // 🔒 Register the email to the registry on success
+          guard.registerProcessedLead(currentLead.email);
+          
           console.log(`✅ Success! Tracking ID: ${result.prospect.id}`);
           console.log(`📨 [Day 1 Email]: "${result.sequence.day1Email}"`);
           console.log(`📩 [Day 3 Bump ]: "${result.sequence.day3FollowUp}"`);
@@ -53,17 +65,15 @@ async function runMainOutboundPipeline() {
         }
       }
 
-      // 3. Post-processing archive step for this file
       router.archiveProcessedFile(filePath);
     }
 
-    // 🕒 Calculate Performance metrics
     const totalTimeSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
-    const estimatedHoursSaved = ((totalSuccessfulRows * 15) / 60).toFixed(2);
+    const idledHoursSaved = ((totalSuccessfulRows * 15) / 60).toFixed(2);
 
-    // 📊 PRINT BEAUTIFUL EXECUTION DASHBOARD SUMMARY 📊
+    // 📊 PRINT UPDATED EXECUTION DASHBOARD SUMMARY 📊
     console.log("=========================================================================");
-    console.log(" ⚡ AGENTIC NEXUS — ENHANCED MULTI-FILE PIPELINE EXECUTION REPORT ⚡ ");
+    console.log(" ⚡ AGENTIC NEXUS — SECURITY PROTECTED PIPELINE REPORT ⚡ ");
     console.log("=========================================================================");
     console.log(` 🏁 Status:           COMPLETED RUN OVER ALL QUEUES`);
     console.log(` 📅 Timestamp:        ${new Date().toLocaleString()}`);
@@ -71,9 +81,10 @@ async function runMainOutboundPipeline() {
     console.log("-------------------------------------------------------------------------");
     console.log(` 📈 Total Files Run:  ${pendingFiles.length} source file(s)`);
     console.log(` ✅ Successfully Run: ${totalSuccessfulRows} total campaigns written to results CSV`);
+    console.log(` ⚠️  Safely Skipped:   ${totalSkippedDuplicates} duplicate record(s) protected`);
     console.log(` ❌ Skipped/Failed:   ${totalFailedRows} records total`);
     console.log("-------------------------------------------------------------------------");
-    console.log(` 🧠 Automation Value: ~${estimatedHoursSaved} hours of copywriting labor saved`);
+    console.log(` 🧠 Automation Value: ~${idledHoursSaved} hours of copywriting labor saved`);
     console.log("=========================================================================\n");
 
   } catch (error: any) {
