@@ -20,11 +20,11 @@ async function runMainOutboundPipeline() {
       console.log(`🌀 Processing row [${i + 1}/${rawLeads.length}]: ${rawLeads[i].businessName}`);
       const result = await outboundEngine.processRawOutboundLead(rawLeads[i]);
 
-      if (result.status === 'contacted') {
+     if (result.status === 'contacted' && result.sequence) {
         console.log(`✅ Success! Tracking ID: ${result.prospect.id}`);
-        console.log(`📨 Live outreach template generated:\n"${result.generatedMessage}"\n`);
-      } else {
-        console.error(`❌ Row Warning: ${result.error}\n`);
+        console.log(`📨 [Day 1 Email]: "${result.sequence.day1Email}"`);
+        console.log(`📩 [Day 3 Bump ]: "${result.sequence.day3FollowUp}"`);
+        console.log(`💬 [Day 5 LinkedIn]: "${result.sequence.day5LinkedIn}"\n`);
       }
     }
     console.log("🏁 Bulk outbound pipeline job completed successfully!");
