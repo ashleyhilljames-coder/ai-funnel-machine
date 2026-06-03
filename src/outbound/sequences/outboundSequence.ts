@@ -17,7 +17,7 @@ export class OutboundSequenceManager {
   }
 
   /**
-   * Generates a complete 3-step multi-channel outreach campaign sequence.
+   * Generates a complete 3-step multi-channel outreach campaign sequence with dynamic niche fallback injection.
    */
   public async generateCampaignSequence(prospect: Prospect): Promise<CampaignSequence> {
     const systemPrompt = `You are an elite B2B growth agent for Agentic Nexus, a premier AI consulting agency. 
@@ -49,13 +49,34 @@ Generate a 3-part communication sequence. Output EXACTLY in this JSON format wit
       const rawJson = response.choices[0]?.message?.content;
       if (!rawJson) throw new Error("Empty response from OpenAI");
 
-      const sequence: CampaignSequence = JSON.parse(rawJson);
-      return sequence;
+      return JSON.parse(rawJson) as CampaignSequence;
 
     } catch (error: any) {
-      // Robust fallback architecture if the OpenAI key is unauthenticated or errors out
+      // 🔥 INTELLIGENT NICHE ADAPTER INJECTION FALLBACK BLOCK 🔥
+      const notesLower = (prospect.notes || '').toLowerCase();
+      const businessLower = prospect.businessName.toLowerCase();
+      
+      // 🏘️ Strategy Alpha: Real Estate Target Niche
+      if (notesLower.includes('real estate') || notesLower.includes('highrise') || businessLower.includes('real estate') || businessLower.includes('group')) {
+        return {
+          day1Email: `Hi ${prospect.contactName}, noticed your listings in the area. Have you considered using custom AI agents to qualify incoming buyer and listing leads automatically?`,
+          day3FollowUp: `Hi ${prospect.contactName}, just trailing back on this. Would you be open to a quick 15-minute operational audit to see how we can capture more hot inquiries for ${prospect.businessName}?`,
+          day5LinkedIn: `Hey ${prospect.contactName}, love your presence in the local real estate market. Let's connect here!`
+        };
+      } 
+      
+      // 🔨 Strategy Beta: Contractor / Roofing Target Niche
+      if (notesLower.includes('roof') || notesLower.includes('mitigation') || businessLower.includes('roof') || businessLower.includes('contractor')) {
+        return {
+          day1Email: `Hi ${prospect.contactName}, noticed your work handling roofing and mitigation inquiries. Have you considered using custom AI voice or chat agents to qualify estimate requests and storm leads automatically?`,
+          day3FollowUp: `Hi ${prospect.contactName}, following up on this. Would you be open to a quick 15-minute operational audit to see how we can automate immediate dispatch responses for ${prospect.businessName}?`,
+          day5LinkedIn: `Hey ${prospect.contactName}, always great connecting with top industry contractors. Love your work at ${prospect.businessName}. Let's connect!`
+        };
+      }
+
+      // 🌐 Strategy Gamma: Standard Generic Fallback Layout
       return {
-        day1Email: `Hi ${prospect.contactName}, noticed your listings at ${prospect.businessName}. Have you considered using custom AI agents to qualify incoming leads automatically?`,
+        day1Email: `Hi ${prospect.contactName}, noticed your work at ${prospect.businessName}. Have you considered leveraging custom AI agents to qualify your incoming leads automatically?`,
         day3FollowUp: `Hi ${prospect.contactName}, just trailing back on this. Would you be open to a quick 15-minute operational workflow audit for ${prospect.businessName} next week?`,
         day5LinkedIn: `Hey ${prospect.contactName}, love what you're building at ${prospect.businessName}. Let's connect here!`
       };
