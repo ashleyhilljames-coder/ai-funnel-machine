@@ -1,13 +1,23 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+export interface TenantLeadRecord {
+  assignedClients: string[];
+  globalBlock: boolean;
+  timestamp: string;
+}
+
+export interface MultiTenantRegistry {
+  [email: string]: TenantLeadRecord;
+}
+
 export class LeadGuard {
   private registryFilePath: string;
-  private exclusionSet: Set<string>;
+  private registry: MultiTenantRegistry;
 
   constructor() {
     this.registryFilePath = path.join(__dirname, '../../processed_leads.json');
-    this.exclusionSet = new Set<string>();
+    this.registry = {};
     this.loadRegistry();
   }
 
@@ -15,28 +25,52 @@ export class LeadGuard {
     if (fs.existsSync(this.registryFilePath)) {
       try {
         const rawData = fs.readFileSync(this.registryFilePath, 'utf8');
-        const emailsArray: string[] = JSON.parse(rawData);
-        this.exclusionSet = new Set(emailsArray.map(email => email.toLowerCase().trim()));
+        this.registry = JSON.parse(rawData);
       } catch (error) {
-        console.error("⚠️ [LeadGuard] Error parsing processed_leads.json, starting fresh.");
-        this.exclusionSet = new Set<string>();
+        console.error("⚠️ [LeadGuard] Error parsing multi-tenant registry, starting fresh.");
+        this.registry = {};
       }
     }
   }
 
-  public isDuplicate(email: string): boolean {
+  /**
+   * Checks if an email is already assigned to a specific client profile
+   */
+  public isDuplicateForClient(email: string, clientId: string): boolean {
     if (!email) return false;
-    return this.exclusionSet.has(email.toLowerCase().trim());
+    const cleanEmail = email.toLowerCase().trim();
+    const record = this.registry[cleanEmail];
+
+    if (!record) return false;
+    if (record.globalBlock) return true;
+
+    return record.assignedClients.includes(clientId.toLowerCase().trim());
   }
 
-  public registerProcessedLead(email: string) {
+  /**
+   * Reserves the lead specifically for this client workspace
+   */
+  public registerClientLead(email: string, clientId: string, enforceGlobalBlock: boolean = false) {
     if (!email) return;
     const cleanEmail = email.toLowerCase().trim();
-    
-    if (!this.exclusionSet.has(cleanEmail)) {
-      this.exclusionSet.add(cleanEmail);
-      const emailsArray = Array.from(this.exclusionSet);
-      fs.writeFileSync(this.registryFilePath, JSON.stringify(emailsArray, null, 2), 'utf8');
+    const cleanClient = clientId.toLowerCase().trim();
+    const timestamp = new Date().toISOString();
+
+    if (!this.registry[cleanEmail]) {
+      this.registry[cleanEmail] = {
+        assignedClients: [cleanClient],
+        globalBlock: enforceGlobalBlock,
+        timestamp
+      };
+    } else {
+      if (!this.registry[cleanEmail].assignedClients.includes(cleanClient)) {
+        this.registry[cleanEmail].assignedClients.push(cleanClient);
+      }
+      if (enforceGlobalBlock) {
+        this.registry[cleanEmail].globalBlock = true;
+      }
     }
+
+    fs.writeFileSync(this.registryFilePath, JSON.stringify(this.registry, null, 2), 'utf8');
   }
 }
