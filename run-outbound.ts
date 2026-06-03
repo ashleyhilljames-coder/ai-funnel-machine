@@ -3,6 +3,7 @@ import { OutboundProcessor } from './src/outbound/processor';
 import { LeadScraper } from './src/outbound/scrapers/leadScraper';
 import { IntakeRouter } from './src/outbound/intakeRouter';
 import { LeadGuard } from './src/outbound/leadGuard';
+import { WebhookPublisher, WebhookPayload } from './src/outbound/webhookPublisher'; // Ensure this is present
 import * as path from 'path';
 
 async function runMainOutboundPipeline() {
@@ -10,8 +11,8 @@ async function runMainOutboundPipeline() {
   const scraper = new LeadScraper();
   const router = new IntakeRouter();
   const guard = new LeadGuard();
+  const publisher = new WebhookPublisher(); // Ensure this is present
 
-  // 🔌 READ TERMINAL ARGUMENTS
   const clientArg = process.argv.find(arg => arg.startsWith('--client='));
   const clientId = clientArg ? clientArg.split('=')[1] : 'default_client';
 
@@ -32,6 +33,7 @@ async function runMainOutboundPipeline() {
   let totalSuccessfulRows = 0;
   let totalFailedRows = 0;
   let totalSkippedDuplicates = 0;
+  let totalWebhooksPublished = 0; // The tracking variable
   const startTime = Date.now();
 
   try {
@@ -46,7 +48,6 @@ async function runMainOutboundPipeline() {
       for (let i = 0; i < rawLeads.length; i++) {
         const currentLead = rawLeads[i];
         
-        // 🛡️ MULTI-TENANT CLIENT INTERCEPT GUARD
         if (currentLead.email && guard.isDuplicateForClient(currentLead.email, clientId)) {
           totalSkippedDuplicates++;
           console.log(`⚠️  [TENANT GUARD] Duplicate flagged for Client [${clientId.toUpperCase()}]! Email: ${currentLead.email}. Skipping...`);
@@ -58,14 +59,38 @@ async function runMainOutboundPipeline() {
 
         if (result.status === 'contacted' && result.sequence) {
           totalSuccessfulRows++;
-          
-          // 🔒 Isolate this lead history to this specific customer ID
           guard.registerClientLead(currentLead.email, clientId, false);
           
           console.log(`✅ Success! Tracking ID: ${result.prospect.id}`);
-          console.log(`📨 [Day 1 Email]: "${result.sequence.day1Email}"`);
-          console.log(`📩 [Day 3 Bump ]: "${result.sequence.day3FollowUp}"`);
-          console.log(`💬 [Day 5 LinkedIn]: "${result.sequence.day5LinkedIn}"\n`);
+          
+          // Construct the data map payload
+          const dispatchPayload: WebhookPayload = {
+            clientId,
+            trackingId: result.prospect.id,
+            timestamp: new Date().toISOString(),
+            lead: {
+              businessName: currentLead.businessName,
+              contactName: currentLead.contactName,
+              email: currentLead.email,
+              niche: currentLead.niche
+            },
+            sequence: {
+              day1Email: result.sequence.day1Email,
+              day3FollowUp: result.sequence.day3FollowUp,
+              day5LinkedIn: result.sequence.day5LinkedIn
+            }
+          };
+
+          console.log(`📡 Sending secure payload to automated webhook receiver...`);
+          const publishResult = await publisher.publishSequence(dispatchPayload);
+          
+          if (publishResult.success) {
+            totalWebhooksPublished++;
+            console.log(`⚡ [WEBHOOK] Transmission verified successfully by endpoint!`);
+          } else {
+            console.log(`⚠️  [WEBHOOK NETWORK ERROR] ${publishResult.error}`);
+          }
+          console.log(""); 
         } else {
           totalFailedRows++;
           console.error(`❌ Row Warning: ${result.error}\n`);
@@ -78,9 +103,9 @@ async function runMainOutboundPipeline() {
     const totalTimeSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
     const idledHoursSaved = ((totalSuccessfulRows * 15) / 60).toFixed(2);
 
-    // 📊 INSULATED TENANT DASHBOARD LOGS
+    // 📊 EXPANDED NETWORKING CONTROL REPORT DASHBOARD
     console.log("=========================================================================");
-    console.log(` ⚡ AGENTIC NEXUS — MULTI-TENANT WORKSPACE CONTROL REPORT ⚡ `);
+    console.log(` ⚡ AGENTIC NEXUS — LIVE NETWORK DISPATCH CONTROL REPORT ⚡ `);
     console.log("=========================================================================");
     console.log(` 🏢 Client Profile:   ${clientId.toUpperCase()}`);
     console.log(` 🏁 Status:           COMPLETED RUN OVER ALL QUEUES`);
@@ -88,7 +113,8 @@ async function runMainOutboundPipeline() {
     console.log(` ⏱️  Execution Time:   ${totalTimeSeconds} seconds`);
     console.log("-------------------------------------------------------------------------");
     console.log(` 📈 Total Files Run:  ${pendingFiles.length} source file(s)`);
-    console.log(` ✅ Successfully Run: ${totalSuccessfulRows} total campaigns written to results CSV`);
+    console.log(` ✅ Campaigns Written: ${totalSuccessfulRows} total scripts generated`);
+    console.log(` 📡 Live Dispatches:  ${totalWebhooksPublished} payloads successfully hit webhook`); // This row!
     console.log(` ⚠️  Client Protected: ${totalSkippedDuplicates} duplicate record(s) isolated`);
     console.log(` ❌ Skipped/Failed:   ${totalFailedRows} records total`);
     console.log("-------------------------------------------------------------------------");
