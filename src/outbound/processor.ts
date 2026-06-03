@@ -1,106 +1,123 @@
-import { Prospect } from './models/prospect';
-import { OutboundSequenceManager, CampaignSequence } from './sequences/outboundSequence';
-import * as fs from 'fs';
-import * as path from 'path';
+import { GoogleGenAI } from '@google/genai';
 
-export interface OutboundProcessResult {
+export interface LeadVector {
+  businessName: string;
+  contactName: string;
+  email: string;
+  niche: string;
+}
+
+export interface ProcessingResult {
   status: 'contacted' | 'failed';
-  prospect: Prospect;
-  sequence?: CampaignSequence;
+  prospect: { id: string };
+  sequence?: {
+    day1Email: string;
+    day3FollowUp: string;
+    day5LinkedIn: string;
+  };
   error?: string;
 }
 
 export class OutboundProcessor {
-  private sequenceManager: OutboundSequenceManager;
-  private resultsFilePath: string;
+  private ai: GoogleGenAI;
 
   constructor() {
-    this.sequenceManager = new OutboundSequenceManager();
-    this.resultsFilePath = path.join(__dirname, '../../outbound_results.csv');
-    this.initializeResultsFile();
+    // Correctly passes an options object config shell required by the new SDK type system
+    this.ai = new GoogleGenAI({});
   }
 
-  private initializeResultsFile() {
-    // Delete the old single-column file format if it exists so it recreates with the fresh new header structure
-    if (fs.existsSync(this.resultsFilePath)) {
-      fs.unlinkSync(this.resultsFilePath);
+  /**
+   * Dynamically selects tailored system instructions based on the target industry sector.
+   * Safe-guarded against missing properties or non-string inputs to prevent 'toLowerCase' crashes.
+   */
+  private getNicheSystemPrompt(niche: any): string {
+    if (!niche || typeof niche !== 'string') {
+      return `You are an elite B2B copywriter representing Agentic Nexus. You are writing to a business owner.
+Your tone is conversational, confident, and direct.
+Focus on how custom AI agents streamline workflows, automate redundant data entries, qualify incoming cold traffic automatically, and save hours of manual administrative labor.`;
     }
-    const headers = 'Timestamp,Tracking ID,Cleaned Business Name,Cleaned Contact Name,Sanitized Email,Day 1 Email,Day 3 Follow Up,Day 5 LinkedIn\n';
-    fs.writeFileSync(this.resultsFilePath, headers, 'utf8');
+
+    const cleanNiche = niche.toLowerCase().trim();
+
+    // 🏗️ INDUSTRY TRACK 1: ROOFING & HOME SERVICES / CONTRACTORS
+    if (cleanNiche.includes('roof') || cleanNiche.includes('mitigation') || cleanNiche.includes('contractor')) {
+      return `You are an elite B2B copywriter representing Agentic Nexus. You are writing to home service contractors and roofing companies.
+Your tone is direct, blue-collar professional, and hyper-focused on speed-to-lead.
+Highlight how custom AI voice or chat agents solve their exact pain points: automating immediate dispatch for storm leads, capturing emergency mitigation inquiries 24/7, and qualifying estimate requests instantly so they don't lose jobs to faster competitors.`;
+    }
+
+    // 🏢 INDUSTRY TRACK 2: REAL ESTATE & PROPERTY MANAGEMENT
+    if (cleanNiche.includes('real estate') || cleanNiche.includes('property') || cleanNiche.includes('rentals') || cleanNiche.includes('highrise')) {
+      return `You are an elite B2B copywriter representing Agentic Nexus. You are writing to property management executives and real estate operators.
+Your tone is polished, corporate, and highly strategic.
+Highlight how custom AI agents solve their exact operational bottlenecks: qualifying inbound tenant or buyer inquiries automatically, streamlining rental application triage, optimizing maintenance request routing, and maximizing occupancy retention rates.`;
+    }
+
+    // 🌐 DEFAULT FALLBACK: GENERAL AI AUTOMATION VALUE PROP
+    return `You are an elite B2B copywriter representing Agentic Nexus. You are writing to a business owner.
+Your tone is conversational, confident, and direct.
+Focus on how custom AI agents streamline workflows, automate redundant data entries, qualify incoming cold traffic automatically, and save hours of manual administrative labor.`;
   }
 
-  private appendResultToCSV(prospect: Prospect, seq: CampaignSequence) {
-    const timestamp = new Date().toISOString();
-    
-    const cleanBusiness = prospect.businessName.replace(/"/g, '""');
-    const cleanContact = prospect.contactName.replace(/"/g, '""');
-    
-    // Sanitize all 3 sequence steps cleanly for CSV storage
-    const d1 = seq.day1Email.replace(/\n/g, ' ').replace(/"/g, '""');
-    const d3 = seq.day3FollowUp.replace(/\n/g, ' ').replace(/"/g, '""');
-    const d5 = seq.day5LinkedIn.replace(/\n/g, ' ').replace(/"/g, '""');
-
-    const csvRow = `"${timestamp}","${prospect.id}","${cleanBusiness}","${cleanContact}","${prospect.email}","${d1}","${d3}","${d5}"\n`;
-    fs.appendFileSync(this.resultsFilePath, csvRow, 'utf8');
-  }
-
-  private cleanBusinessName(rawName: string): string {
-    if (!rawName) return '';
-    let name = rawName.trim();
-    const corporateSuffixRegex = /([,\s]+(llc|inc|ltd|corp|corporation|co|incorporated|group))([.\s]*)$/i;
-    name = name.replace(corporateSuffixRegex, '');
-    name = name.replace(/\s+/g, ' ');
-    name = name.replace(/[.,/#!$%^&*;:{}=\-_`~()]+$/, '');
-    return name.trim();
-  }
-
-  private cleanContactName(rawName: string): string {
-    if (!rawName || rawName.trim().length === 0) return 'Valued Partner';
-    return rawName.trim().replace(/\s+/g, ' ');
-  }
-
-  public async processRawOutboundLead(rawLead: any): Promise<OutboundProcessResult> {
+  /**
+   * Processes a single lead vector, scrubs company noise, and compiles a highly tailored 3-step outreach sequence
+   */
+  public async processRawOutboundLead(lead: LeadVector): Promise<ProcessingResult> {
     try {
-      if (!rawLead.businessName || !rawLead.email) {
-        return {
-          status: 'failed',
-          prospect: rawLead,
-          error: 'Missing vital prospect identification fields.'
-        };
-      }
+      // Safe guard parsing checks to ensure name fields exist as strings
+      const bizName = lead.businessName || 'Business Owner';
+      const contact = lead.contactName || 'there';
 
-      const polishedBusinessName = this.cleanBusinessName(rawLead.businessName);
-      const polishedContactName = this.cleanContactName(rawLead.contactName);
-      const polishedEmail = rawLead.email.toLowerCase().trim();
+      const cleanBusinessName = bizName
+        .replace(/\b(llc|inc|co|corp|incorporated|limited|ltd|& mitigation|group)\b/gi, '')
+        .trim();
 
-      const structuredProspect: Prospect = {
-        id: rawLead.id || `prospect_${Math.random().toString(36).substr(2, 9)}`,
-        businessName: polishedBusinessName,
-        contactName: polishedContactName,
-        email: polishedEmail,
-        notes: rawLead.notes ? rawLead.notes.trim() : '',
-        status: 'cold',
-        outboundSequenceStage: 1
-      };
+      const baseTrackingId = `prospect_${Math.random().toString(36).substring(2, 10)}`;
+      const activeSystemPrompt = this.getNicheSystemPrompt(lead.niche);
 
-      // 🔥 Generate the multi-step sequence campaign array live!
-      const campaignSequence = await this.sequenceManager.generateCampaignSequence(structuredProspect);
-      const finalProspect = this.sequenceManager.advanceStage(structuredProspect);
+      const userPrompt = `Generate a high-converting 3-step outreach sequence for ${contact} at ${cleanBusinessName}. 
+The sequence MUST include a Day 1 Email, a Day 3 follow-up bump, and a Day 5 LinkedIn connection message.
+Keep it punchy, completely natural, and do not use generic AI buzzwords or standard corporate fluff.`;
 
-      // Append all columns cleanly to our export ledger
-      this.appendResultToCSV(finalProspect, campaignSequence);
+      // Executing call using official @google/genai structural parameters
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: userPrompt,
+        config: {
+          systemInstruction: activeSystemPrompt,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              day1Email: { type: 'STRING' },
+              day3FollowUp: { type: 'STRING' },
+              day5LinkedIn: { type: 'STRING' },
+            },
+            required: ['day1Email', 'day3FollowUp', 'day5LinkedIn'],
+          },
+        },
+      });
+
+      const responseText = response.text;
+      if (!responseText) throw new Error("Received an empty model generation response stream.");
+
+      const sequence = JSON.parse(responseText);
 
       return {
         status: 'contacted',
-        prospect: finalProspect,
-        sequence: campaignSequence
+        prospect: { id: baseTrackingId },
+        sequence: {
+          day1Email: sequence.day1Email,
+          day3FollowUp: sequence.day3FollowUp,
+          day5LinkedIn: sequence.day5LinkedIn
+        }
       };
 
-    } catch (err: any) {
+    } catch (error: any) {
       return {
         status: 'failed',
-        prospect: rawLead,
-        error: `Internal Pipeline Processing Error: ${err.message}`
+        prospect: { id: 'failed_run' },
+        error: error.message
       };
     }
   }
