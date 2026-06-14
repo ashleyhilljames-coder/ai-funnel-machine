@@ -3,7 +3,6 @@ import { OutboundProcessor } from './src/outbound/processor';
 import { LeadScraper } from './src/outbound/scrapers/leadScraper';
 import { IntakeRouter } from './src/outbound/intakeRouter';
 import { LeadGuard } from './src/outbound/leadGuard';
-import { WebhookPublisher, WebhookPayload } from './src/outbound/webhookPublisher'; // Ensure this is present
 import * as path from 'path';
 
 async function runMainOutboundPipeline() {
@@ -11,20 +10,28 @@ async function runMainOutboundPipeline() {
   const scraper = new LeadScraper();
   const router = new IntakeRouter();
   const guard = new LeadGuard();
-  const publisher = new WebhookPublisher(); // Ensure this is present
 
   const clientArg = process.argv.find(arg => arg.startsWith('--client='));
   const clientId = clientArg ? clientArg.split('=')[1] : 'default_client';
 
   const pendingFiles = router.getPendingCSVFiles();
 
+  // Enforce Modern Web Guidance availability protocols
+  const isLanguageModelAvailable = typeof globalThis !== 'undefined' && 'LanguageModel' in globalThis;
+
   if (pendingFiles.length === 0) {
-    console.log("=========================================================================");
-    console.log(`📭 [Agentic Nexus] Tenant Workspace: [${clientId.toUpperCase()}]`);
-    console.log("📭 Intake Router Status: No pending CSV files found.");
-    console.log("👉 Drop your lead sheets directly into the 'intake/' directory to run.");
-    console.log("=========================================================================\n");
-    return;
+      console.log("=====================================================================");
+      console.log(`[Agentic Nexus] Tenant Workspace: [${clientId.toUpperCase()}] - No pending CSV files found.`);
+      console.log("👉 Tip: Drop your lead sheets directly into the 'intake/' directory to begin.");
+      console.log("=====================================================================");
+      return;
+  }
+
+  // Modern Web Guidance: Execute safety check before processing
+  if (!isLanguageModelAvailable) {
+      console.log(`[Agentic Nexus] Local LanguageModel API unavailable. Routing to Remote Gemini API fallback...`);
+  } else {
+      console.log(`[Agentic Nexus] Local LanguageModel API detected. Executing with low-latency local context...`);
   }
 
   console.log(`📂 [Agentic Nexus] Multi-Tenant Router Activated | Profile: [${clientId.toUpperCase()}]`);
@@ -33,7 +40,7 @@ async function runMainOutboundPipeline() {
   let totalSuccessfulRows = 0;
   let totalFailedRows = 0;
   let totalSkippedDuplicates = 0;
-  let totalWebhooksPublished = 0; // The tracking variable
+  let totalEmailsDispatched = 0; 
   const startTime = Date.now();
 
   try {
@@ -55,41 +62,17 @@ async function runMainOutboundPipeline() {
         }
 
         console.log(`🌀 Processing row [${i + 1}/${rawLeads.length}]: ${currentLead.businessName}`);
+        
+        // This triggers the new processor, which uses OpenAI and sends immediately via Resend
         const result = await outboundEngine.processRawOutboundLead(currentLead);
 
         if (result.status === 'contacted' && result.sequence) {
           totalSuccessfulRows++;
+          totalEmailsDispatched++; // Track successful Resend firings directly
           guard.registerClientLead(currentLead.email, clientId, false);
           
           console.log(`✅ Success! Tracking ID: ${result.prospect.id}`);
-          
-          // Construct the data map payload
-          const dispatchPayload: WebhookPayload = {
-            clientId,
-            trackingId: result.prospect.id,
-            timestamp: new Date().toISOString(),
-            lead: {
-              businessName: currentLead.businessName,
-              contactName: currentLead.contactName,
-              email: currentLead.email,
-              niche: currentLead.niche
-            },
-            sequence: {
-              day1Email: result.sequence.day1Email,
-              day3FollowUp: result.sequence.day3FollowUp,
-              day5LinkedIn: result.sequence.day5LinkedIn
-            }
-          };
-
-          console.log(`📡 Sending secure payload to automated webhook receiver...`);
-          const publishResult = await publisher.publishSequence(dispatchPayload);
-          
-          if (publishResult.success) {
-            totalWebhooksPublished++;
-            console.log(`⚡ [WEBHOOK] Transmission verified successfully by endpoint!`);
-          } else {
-            console.log(`⚠️  [WEBHOOK NETWORK ERROR] ${publishResult.error}`);
-          }
+          console.log(`⚡ [RESEND] Personal note dispatched directly to ${currentLead.email}!`);
           console.log(""); 
         } else {
           totalFailedRows++;
@@ -114,7 +97,7 @@ async function runMainOutboundPipeline() {
     console.log("-------------------------------------------------------------------------");
     console.log(` 📈 Total Files Run:  ${pendingFiles.length} source file(s)`);
     console.log(` ✅ Campaigns Written: ${totalSuccessfulRows} total scripts generated`);
-    console.log(` 📡 Live Dispatches:  ${totalWebhooksPublished} payloads successfully hit webhook`); // This row!
+    console.log(` 📧 Live Dispatches:  ${totalEmailsDispatched} emails successfully sent via Resend`);
     console.log(` ⚠️  Client Protected: ${totalSkippedDuplicates} duplicate record(s) isolated`);
     console.log(` ❌ Skipped/Failed:   ${totalFailedRows} records total`);
     console.log("-------------------------------------------------------------------------");

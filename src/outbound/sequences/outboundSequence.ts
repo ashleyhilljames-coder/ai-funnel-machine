@@ -1,93 +1,99 @@
-import { Prospect } from '../models/prospect';
+import { Resend } from 'resend';
 import { OpenAI } from 'openai';
+import * as dotenv from 'dotenv';
 
-export interface CampaignSequence {
+// Force load environment variables
+dotenv.config();
+
+// Initialize our two core engines
+const resend = new Resend(process.env.RESEND_API_KEY);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+interface Prospect {
+  contactName: string;
+  businessName: string;
+  email: string;
+  notes?: string;
+}
+
+interface CampaignResult {
   day1Email: string;
-  day3FollowUp: string;
-  day5LinkedIn: string;
 }
 
 export class OutboundSequenceManager {
-  private openai: OpenAI;
+  async generateCampaignSequence(prospect: Prospect): Promise<CampaignResult> {
+    console.log(`\n🧠 AI is analyzing and crafting a custom pitch for ${prospect.businessName}...`);
 
-  constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || 'MOCK_KEY',
-    });
-  }
+    // Define a highly tailored system prompt for your agency's voice
+   const systemPrompt = `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Agentic Nexus. 
+Your agency builds custom AI intake and lead-qualification agents specifically for high-ticket home service contractors and mitigation companies.
+Write a short, direct, and completely hype-free Day 1 cold outreach email.
+- Keep it strictly under 4 sentences and write in a casual, peer-to-peer tone.
+- Do NOT use cheesy marketing terms, corporate buzzwords, or fake compliments.
+- Focus heavily on the exact pain point: when crews are out on a restoration or roof job, incoming emergency calls go to voicemail, which means losing a $10k+ project to a competitor.
+- Mention how a 24/7 AI intake agent qualifies these emergency leads instantly so they never miss a job.
+- End with a low-friction question asking if they are currently using automation to capture after-hours inbound calls.`;
 
-  /**
-   * Generates a complete 3-step multi-channel outreach campaign sequence with dynamic niche fallback injection.
-   */
-  public async generateCampaignSequence(prospect: Prospect): Promise<CampaignSequence> {
-    const systemPrompt = `You are an elite B2B growth agent for Agentic Nexus, a premier AI consulting agency. 
-Your goal is to write natural, short, impactful outreach copy that feels 100% human-written and completely free of artificial corporate fluff.`;
-
-    const userPrompt = `Prospect Information:
+    const userPrompt = `Prospect Details:
+- Contact Name: ${prospect.contactName}
 - Business Name: ${prospect.businessName}
-- Contact Person: ${prospect.contactName}
-- Context Niche: ${prospect.notes}
+- Industry/Notes: ${prospect.notes || 'General Business/Inbound Operations'}
 
-Generate a 3-part communication sequence. Output EXACTLY in this JSON format with nothing else (no markdown blocks, no extra text):
-{
-  "day1Email": "A 2-3 sentence introductory opening pitch asking how they handle qualifying incoming leads.",
-  "day3FollowUp": "A 1-2 sentence quick email follow-up offering a free 15-minute workflow automation audit.",
-  "day5LinkedIn": "A casual LinkedIn connection message under 300 characters tailored to their industry."
-}`;
+Write only the body of the email starting directly after the greeting. Do not include a subject line or sign-off block.`;
+
+    let emailBodyText = "";
 
     try {
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-5.4-mini',
+      // Execute the OpenAI generation stream
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini', // Fast, cheap, and excellent for specialized text formatting
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        response_format: { type: "json_object" }
       });
 
-      const rawJson = response.choices[0]?.message?.content;
-      if (!rawJson) throw new Error("Empty response from OpenAI");
-
-      return JSON.parse(rawJson) as CampaignSequence;
-
-    } catch (error: any) {
-      // 🔥 INTELLIGENT NICHE ADAPTER INJECTION FALLBACK BLOCK 🔥
-      const notesLower = (prospect.notes || '').toLowerCase();
-      const businessLower = prospect.businessName.toLowerCase();
-      
-      // 🏘️ Strategy Alpha: Real Estate Target Niche
-      if (notesLower.includes('real estate') || notesLower.includes('highrise') || businessLower.includes('real estate') || businessLower.includes('group')) {
-        return {
-          day1Email: `Hi ${prospect.contactName}, noticed your listings in the area. Have you considered using custom AI agents to qualify incoming buyer and listing leads automatically?`,
-          day3FollowUp: `Hi ${prospect.contactName}, just trailing back on this. Would you be open to a quick 15-minute operational audit to see how we can capture more hot inquiries for ${prospect.businessName}?`,
-          day5LinkedIn: `Hey ${prospect.contactName}, love your presence in the local real estate market. Let's connect here!`
-        };
-      } 
-      
-      // 🔨 Strategy Beta: Contractor / Roofing Target Niche
-      if (notesLower.includes('roof') || notesLower.includes('mitigation') || businessLower.includes('roof') || businessLower.includes('contractor')) {
-        return {
-          day1Email: `Hi ${prospect.contactName}, noticed your work handling roofing and mitigation inquiries. Have you considered using custom AI voice or chat agents to qualify estimate requests and storm leads automatically?`,
-          day3FollowUp: `Hi ${prospect.contactName}, following up on this. Would you be open to a quick 15-minute operational audit to see how we can automate immediate dispatch responses for ${prospect.businessName}?`,
-          day5LinkedIn: `Hey ${prospect.contactName}, always great connecting with top industry contractors. Love your work at ${prospect.businessName}. Let's connect!`
-        };
-      }
-
-      // 🌐 Strategy Gamma: Standard Generic Fallback Layout
-      return {
-        day1Email: `Hi ${prospect.contactName}, noticed your work at ${prospect.businessName}. Have you considered leveraging custom AI agents to qualify your incoming leads automatically?`,
-        day3FollowUp: `Hi ${prospect.contactName}, just trailing back on this. Would you be open to a quick 15-minute operational workflow audit for ${prospect.businessName} next week?`,
-        day5LinkedIn: `Hey ${prospect.contactName}, love what you're building at ${prospect.businessName}. Let's connect here!`
-      };
+      emailBodyText = completion.choices[0].message?.content?.trim() || "";
+    } catch (aiError) {
+      console.error('⚠️ OpenAI generation failed, falling back to core baseline copy:', aiError);
+      emailBodyText = `I noticed your business operations online and wanted to see if you've looked into streamlining your intake systems using custom automation setups.`;
     }
-  }
 
-  public advanceStage(prospect: Prospect): Prospect {
+    // Compile the final polished structure
+    const finalEmail = `Hi ${prospect.contactName},\n\n${emailBodyText}\n\nBest,\n\nAshley | Agentic Nexus`;
+
+    // Fire the transmission pipeline
+    await sendOutboundEmail({
+      to: prospect.email,
+      subject: `Quick question regarding ${prospect.businessName}`,
+      htmlContent: finalEmail.replace(/\n/g, '<br>')
+    });
+
     return {
-      ...prospect,
-      status: 'contacted',
-      outboundSequenceStage: 2,
+      day1Email: finalEmail
     };
+  }
+}
+
+export async function sendOutboundEmail(payload: { to: string; subject: string; htmlContent: string }) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'Ashley | Agentic Nexus <ashley.hilljames@agenticnexus.vip>',
+      to: [payload.to],
+      subject: payload.subject,
+      html: payload.htmlContent,
+    });
+
+    if (error) {
+      console.error('❌ Resend API gateway rejected dispatch:', error);
+      return { success: false, error };
+    }
+
+    console.log(`🚀 Dispatch successful! Message ID: ${data?.id}`);
+    return { success: true, messageId: data?.id };
+  } catch (error) {
+    console.error('❌ Network execution failure during email transit:', error);
+    return { success: false, error };
   }
 }

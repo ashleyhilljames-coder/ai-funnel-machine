@@ -3,3 +3,5 @@ dist/
 .env
 *.js.map
 gcp-key.json
+google-credentials.json
+agentic_nexus.db

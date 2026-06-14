@@ -1,25 +1,23 @@
-import express, { type Request, type Response } from 'express';
-import { ingestLead, type IngestInput } from './ingest.js';
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Fix for ES Modules __dirname requirement
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Global Middleware
 app.use(express.json());
 
-app.post('/leads', async (req: Request, res: Response) => {
-  try {
-    const result = await ingestLead(req.body as IngestInput);
-    res.status(202).json(result);
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'ZodError') {
-      res.status(400).json({ error: 'Validation failed', details: (err as unknown as { errors: unknown }).errors });
-    } else {
-      console.error(err);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
+// 📂 Tell Express exactly where to find the public directory using an absolute path
+app.use(express.static(path.join(__dirname, '../public')));
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+// 📋 Standard Intake Route
+app.post('/api/intake', async (req, res) => {
+  console.log('📥 Received standard intake payload:', req.body);
+  res.status(200).json({ status: 'received' });
 });
 
 export default app;
