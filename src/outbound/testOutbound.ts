@@ -60,7 +60,7 @@ async function runDirectOutboundCampaign() {
       }
 
       // This triggers OpenAI generation AND immediate direct Resend dispatch!
-      await sequenceManager.generateCampaignSequence({
+      await sequenceManager.generateCampaignSequence('default_client', {
         contactName: lead.contactName,
         businessName: lead.businessName,
         email: lead.email,

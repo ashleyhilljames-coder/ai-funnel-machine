@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Syncro Scale Voice Interface</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .container { text-align: center; background: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        button { background: #007bff; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button.recording { background: #dc3545; }
+        #status { margin-top: 20px; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎙️ Syncro Scale Production Engine</h2>
+        <p>Real-Time PCM16 Voice Pipeline Test</p>
+        
+        <div style="margin: 20px 0 25px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <label for="test-client-select" style="font-size: 0.9rem; font-weight: 600; color: #a1a1aa;">Select Client Receptionist:</label>
+            <select id="test-client-select" style="padding: 10px 16px; font-size: 0.95rem; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: white; cursor: pointer; width: 100%; max-width: 280px; font-family: inherit;">
+                <option value="restoration_lv">🏢 Restoration Pro Las Vegas</option>
+                <option value="roofing_sc">🏠 Sin City Roof Crew</option>
+                <option value="property_apex">🏢 Apex Property Management</option>
+                <option value="default_client">⚙️ Default Receptionist</option>
+            </select>
+        </div>
+
+        <button id="micBtn">Start Streaming</button>
+        <div id="status">Status: Disconnected</div>
+    </div>
+
+    <script>
+        const micBtn = document.getElementById('micBtn');
+        const statusDiv = document.getElementById('status');
+        const testClientSelect = document.getElementById('test-client-select');
+        let ws, audioContext, scriptProcessor, mediaStream;
+
+        micBtn.addEventListener('click', async () => {
+            if (ws && ws.readyState === WebSocket.OPEN) { stopStreaming(); return; }
+            await startStreaming();
+        });
+
+        async function startStreaming() {
+            try {
+                statusDiv.innerText = "Status: Connecting to Pipe...";
+                const clientId = testClientSelect.value;
+                ws = new WebSocket(`ws://${window.location.host}/voice-stream?clientId=${clientId}`);
+                
+                ws.onopen = async () => {
+                    statusDiv.innerText = "Status: Connected! SPEAK NOW";
+                    micBtn.classList.add('recording');
+                    micBtn.innerText = "Stop Streaming";
+
+                    // 1. Force the audio context to OpenAI's exact 24kHz format
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                    
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const source = audioContext.createMediaStreamSource(mediaStream);
+
+                    // 2. Create raw processor node
+                    scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                    
+                    scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
+                        if (ws.readyState !== WebSocket.OPEN) return;
+
+                        const inputBuffer = audioProcessingEvent.inputBuffer;
+                        const float32Data = inputBuffer.getChannelData(0);
+
+                        // 3. Convert Float32 microphone data to Int16 PCM array
+                        const pcm16Buffer = new Int16Array(float32Data.length);
+                        for (let i = 0; i < float32Data.length; i++) {
+                            let s = Math.max(-1, Math.min(1, float32Data[i]));
+                            pcm16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+
+                        // 4. Clean Base64 pack without data headers
+                        const binaryString = String.fromCharCode.apply(null, new Uint8Array(pcm16Buffer.buffer));
+                        const base64Audio = btoa(binaryString);
+
+                        ws.send(JSON.stringify({ event: "audio_data", data: base64Audio }));
+                    };
+
+                    source.connect(scriptProcessor);
+                    scriptProcessor.connect(audioContext.destination);
+                };
+
+                let nextPlayTime = 0;
+
+                function playAudioChunk(base64Data) {
+                    if (!audioContext) return;
+                    
+                    const binaryString = atob(base64Data);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    const pcm16Array = new Int16Array(bytes.buffer);
+                    const float32Data = new Float32Array(pcm16Array.length);
+                    for (let i = 0; i < pcm16Array.length; i++) {
+                        float32Data[i] = pcm16Array[i] / 32768.0;
+                    }
+                    
+                    const audioBuffer = audioContext.createBuffer(1, float32Data.length, 24000);
+                    audioBuffer.getChannelData(0).set(float32Data);
+                    
+                    const source = audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(audioContext.destination);
+                    
+                    const currentTime = audioContext.currentTime;
+                    if (nextPlayTime < currentTime) {
+                        nextPlayTime = currentTime;
+                    }
+                    source.start(nextPlayTime);
+                    nextPlayTime += audioBuffer.duration;
+                }
+
+                ws.onmessage = async (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.event === "audio_chunk") {
+                            playAudioChunk(msg.data);
+                        }
+                    } catch(e) {}
+                };
+
+                ws.onclose = () => stopStreaming();
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "Status: Hardware error.";
+            }
+        }
+
+        function stopStreaming() {
+            statusDiv.innerText = "Status: Disconnected";
+            micBtn.classList.remove('recording');
+            micBtn.innerText = "Start Streaming";
+            
+            if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
+            if (audioContext) { audioContext.close(); audioContext = null; }
+            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+            if (ws) { ws.close(); ws = null; }
+        }
+    </script>
+</body>
+</html>

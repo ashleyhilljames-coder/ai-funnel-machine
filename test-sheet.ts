@@ -12,7 +12,7 @@ async function runTest() {
   };
 
   try {
-    const success = await appendLeadToSheet(mockLead);
+    const success = await appendLeadToSheet('default_client', mockLead);
     if (success) {
       console.log('🎉 VICTORY! Go check your Google Sheet right now!');
     }

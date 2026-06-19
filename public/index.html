@@ -2,103 +2,551 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Syncro Scale Voice Interface</title>
-    <style>
-        body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .container { text-align: center; background: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        button { background: #007bff; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        button.recording { background: #dc3545; }
-        #status { margin-top: 20px; color: #aaa; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncro Scale - The AI layer that brings clarity to complexity</title>
+    <meta name="description" content="Syncro Scale designs and implements end-to-end smart automations, custom AI agents, and enterprise workflows. Optimize your operations.">
+    <!-- Load Outfit and Inter fonts from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <div class="container">
-        <h2>🎙️ Syncro Scale Production Engine</h2>
-        <p>Real-Time PCM16 Voice Pipeline Test</p>
-        <button id="micBtn">Start Streaming</button>
-        <div id="status">Status: Disconnected</div>
+
+    <!-- Background Decorative Waves & Glows -->
+    <div class="hero-bg-wave"></div>
+    <div class="glow-bg-radial"></div>
+
+    <!-- Header Navigation -->
+    <header class="app-header">
+        <div class="header-container">
+            <a href="#" class="brand-logo" id="header-logo">
+                <!-- SVG Logo: The Infinite Scale (3D Gradient Ribbon) -->
+                <svg class="logo-svg" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="blueGrad1" x1="10%" y1="0%" x2="90%" y2="100%">
+                            <stop offset="0%" stop-color="#15A2FA" />
+                            <stop offset="50%" stop-color="#0066FE" />
+                            <stop offset="100%" stop-color="#8B5CF6" />
+                        </linearGradient>
+                        <linearGradient id="blueGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#001155" />
+                            <stop offset="60%" stop-color="#0044CC" />
+                            <stop offset="100%" stop-color="#ff3366" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Twisted Ribbon SS Loop Path -->
+                    <path d="M 60,35 C 45,15 25,25 25,42 C 25,60 40,65 60,50 C 80,35 95,40 95,58 C 95,75 75,85 60,65" stroke="url(#blueGrad1)" stroke-width="12" stroke-linecap="round" fill="none" />
+                    <path d="M 60,65 C 48,78 35,82 28,75 C 20,68 22,55 35,48" stroke="url(#blueGrad2)" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.85" />
+                    <path d="M 60,35 C 72,22 85,18 92,25 C 100,32 98,45 85,52" stroke="url(#blueGrad2)" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.85" />
+                </svg>
+                <div class="brand-text">
+                    <span class="brand-title">SYNCRO</span>
+                    <span class="brand-subtitle">SCALE</span>
+                </div>
+            </a>
+            <nav class="nav-links">
+                <a href="#features" class="nav-item">Features</a>
+                <a href="#details" class="nav-item">Core Engine</a>
+                <a href="#sandbox" class="nav-item">Sandbox</a>
+                <a href="#faq" class="nav-item">FAQs</a>
+                <a href="#contact" class="nav-item btn-contact-nav">Get in touch</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        
+        <!-- Hero Section -->
+        <section class="section-hero animate-fade-in">
+            <div class="hero-container">
+                <h1 class="hero-title-main">The AI layer that brings clarity to complexity.</h1>
+                <p class="hero-subtitle-main">Optimize operations, score leads, and book discovery calls automatically with deterministic autonomous agents.</p>
+                <div class="hero-cta-group">
+                    <a href="#contact" class="btn-primary-glow">Get Started</a>
+                    <a href="#features" class="btn-outline-dark">Learn More</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Intro Text Block -->
+        <section class="section-intro">
+            <div class="intro-container">
+                <p class="intro-large-text">
+                    Smart systems that structure your data. An intelligent engine that extracts, evaluates, and schedules. We build autonomous qualification funnels so your team can focus on closing.
+                </p>
+            </div>
+        </section>
+
+        <!-- Core Engine Features Section -->
+        <section class="section-core-features" id="features">
+            <div class="core-features-container">
+                <span class="section-badge-dark"><span class="badge-dot-purple"></span> The Core Engine Features:</span>
+                
+                <div class="core-features-grid">
+                    <!-- Feature Card 1 -->
+                    <div class="core-feature-card">
+                        <div class="feature-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </div>
+                        <h3>Ingest</h3>
+                        <p>Automatically captures multi-channel inbound details, parsing raw inputs into structured formats cleanly.</p>
+                        <span class="card-tag">Structured Input</span>
+                    </div>
+
+                    <!-- Feature Card 2 -->
+                    <div class="core-feature-card">
+                        <div class="feature-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+                                <line x1="12" y1="22" x2="12" y2="15.5"></line>
+                                <line x1="12" y1="15.5" x2="22" y2="8.5"></line>
+                                <line x1="12" y1="15.5" x2="2" y2="8.5"></line>
+                                <polyline points="2 8.5 12 15.5 22 8.5"></polyline>
+                                <polyline points="2 15.5 12 22 22 15.5"></polyline>
+                            </svg>
+                        </div>
+                        <h3>Qualify</h3>
+                        <p>Evaluates leads against criteria using advanced models to assign precise scores dynamically.</p>
+                        <span class="card-tag">AI Scoring</span>
+                    </div>
+
+                    <!-- Feature Card 3 -->
+                    <div class="core-feature-card">
+                        <div class="feature-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <h3>Evaluate</h3>
+                        <p>Checks brand fit and coordinates calendar bookings for Qualified profiles in seconds.</p>
+                        <span class="card-tag">Auto Dispatch</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alternating Detailed Feature Sections -->
+        <section class="section-details" id="details">
+            <div class="details-container">
+                
+                <!-- Detail Row 1 -->
+                <div class="detail-row">
+                    <div class="detail-text-column">
+                        <span class="detail-badge-red">Ingestion Pipeline</span>
+                        <h2 class="detail-title">Data ingestion that structures automation</h2>
+                        <p class="detail-desc">Our intelligent ingestion pipeline captures inbound inquiries across standard web forms, incoming telephone streams, and virtual assistant calls. Using custom schema evaluation, raw lead strings are parsed into clean structured tables automatically, maintaining 99% data accuracy.</p>
+                    </div>
+                    <div class="detail-image-column">
+                        <div class="detail-image-wrapper">
+                            <img src="ingest_feature.png" alt="Ingestion Pipeline Graphic" class="detail-image">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detail Row 2 -->
+                <div class="detail-row alternate">
+                    <div class="detail-text-column">
+                        <span class="detail-badge-blue">Qualification Pipeline</span>
+                        <h2 class="detail-title">Intelligent qualification that scores leads</h2>
+                        <p class="detail-desc">Every lead is dynamically qualified by custom Claude-powered scoring agents. By evaluating parameters like project budget, timeframes, and specific client requirements, the qualifiers filter out low-value inquiries instantly to prioritize high-value consultations on your calendar.</p>
+                    </div>
+                    <div class="detail-image-column">
+                        <div class="detail-image-wrapper">
+                            <img src="qualify_feature.png" alt="Qualification Calendar Graphic" class="detail-image">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detail Row 3 -->
+                <div class="detail-row">
+                    <div class="detail-text-column">
+                        <span class="detail-badge-purple">Evaluation Engine</span>
+                        <h2 class="detail-title">AI Evaluator: Brand fit analysis</h2>
+                        <p class="detail-desc">Before booking, our Evaluator agent computes brand-fit ratios and confidence scores. If a lead matches your target profile, the calendar broker retrieves real-time availability and schedules discovery sessions seamlessly, triggering background notifications to all endpoints.</p>
+                    </div>
+                    <div class="detail-image-column">
+                        <div class="detail-image-wrapper">
+                            <img src="evaluate_feature.png" alt="Evaluation Glass Graphic" class="detail-image">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Metrics Grid Section -->
+        <section class="section-metrics">
+            <div class="metrics-container">
+                <h2 class="metrics-title">Engineered for speed, built for accuracy</h2>
+                
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-number">99%</div>
+                        <div class="metric-label">Ingestion accuracy across channels</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-number">10x</div>
+                        <div class="metric-label">Increase in lead qualifying speed</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-number">24/7</div>
+                        <div class="metric-label">Live response & evaluation active</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-number">100%</div>
+                        <div class="metric-label">Calendar synchronization accuracy</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Pipeline Sandbox Section -->
+        <section class="section-sandbox" id="sandbox">
+            <div class="sandbox-container">
+                <span class="section-badge-dark"><span class="badge-dot-purple"></span> Simulation Environment:</span>
+                <h2 class="sandbox-section-title">Interactive Pipeline Sandbox</h2>
+                <p class="sandbox-section-subtitle">Simulate our multi-agent qualification engine and see how inbound leads are parsed, scored, and booked in real-time.</p>
+                
+                <div class="sandbox-grid">
+                    <!-- Column 1: Configuration -->
+                    <div class="sandbox-panel config-panel">
+                        <h3>1. Select a Lead Scenario</h3>
+                        <div class="preset-buttons">
+                            <button type="button" class="btn-preset active" data-preset="enterprise">
+                                <span class="preset-icon">💼</span>
+                                <span class="preset-label">Enterprise Automation</span>
+                            </button>
+                            <button type="button" class="btn-preset" data-preset="low-budget">
+                                <span class="preset-icon">📉</span>
+                                <span class="preset-label">Low Budget Request</span>
+                            </button>
+                            <button type="button" class="btn-preset" data-preset="spam">
+                                <span class="preset-icon">⚠️</span>
+                                <span class="preset-label">Promo Link Spam</span>
+                            </button>
+                        </div>
+                        
+                        <form id="sandbox-form" class="sandbox-form-sleek">
+                            <div class="sandbox-input-row">
+                                <div class="form-group-sandbox">
+                                    <label for="sb-name">Lead Name</label>
+                                    <input type="text" id="sb-name" class="sandbox-input" value="Anthony Miller" required>
+                                </div>
+                                <div class="form-group-sandbox">
+                                    <label for="sb-company">Company</label>
+                                    <input type="text" id="sb-company" class="sandbox-input" value="Vegas Highrise" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group-sandbox">
+                                <label for="sb-budget">Choose Lead Budget</label>
+                                <select id="sb-budget" class="sandbox-select" required>
+                                    <option value="Under $5,000">Under $5,000</option>
+                                    <option value="$5,000 - $15,000">$5,000 - $15,000</option>
+                                    <option value="$15,000 - $50,000" selected>$15,000 - $50,000</option>
+                                    <option value="$50,000+">$50,000+</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group-sandbox">
+                                <label for="sb-scope">Project Scope & Description</label>
+                                <textarea id="sb-scope" class="sandbox-textarea" rows="4" required>Need to build a custom AI scoring pipeline to qualify property manager requests and dispatch local HVAC restoration technicians automatically.</textarea>
+                            </div>
+                            
+                            <button type="submit" id="btn-run-simulation" class="btn-primary-glow sandbox-submit-btn">
+                                <span>Run Pipeline Simulation</span>
+                                <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Column 2: Live Processing Stream -->
+                    <div class="sandbox-panel flow-panel">
+                        <h3>2. Live Processing Engine</h3>
+                        
+                        <!-- Flow Diagram -->
+                        <div class="flow-diagram">
+                            <div class="flow-node" id="node-ingest">
+                                <div class="node-icon">📥</div>
+                                <div class="node-name">Ingest</div>
+                                <div class="node-status">Ready</div>
+                            </div>
+                            <div class="flow-connector" id="conn-1"></div>
+                            <div class="flow-node" id="node-qualify">
+                                <div class="node-icon">🧠</div>
+                                <div class="node-name">Qualify</div>
+                                <div class="node-status">Pending</div>
+                            </div>
+                            <div class="flow-connector" id="conn-2"></div>
+                            <div class="flow-node" id="node-evaluate">
+                                <div class="node-icon">⚖️</div>
+                                <div class="node-name">Evaluate</div>
+                                <div class="node-status">Pending</div>
+                            </div>
+                            <div class="flow-connector" id="conn-3"></div>
+                            <div class="flow-node" id="node-calendar">
+                                <div class="node-icon">📅</div>
+                                <div class="node-name">Calendar</div>
+                                <div class="node-status">Pending</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Terminal UI -->
+                        <div class="sandbox-terminal">
+                            <div class="terminal-header">
+                                <div class="terminal-dots">
+                                    <span class="dot-red"></span>
+                                    <span class="dot-yellow"></span>
+                                    <span class="dot-green"></span>
+                                </div>
+                                <div class="terminal-title">pipeline-agent --verbose</div>
+                            </div>
+                            <div class="terminal-body" id="terminal-log">
+                                <div class="log-line system">// Sandbox ready. Click "Run Pipeline Simulation" to start.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="section-faq" id="faq">
+            <div class="faq-container">
+                <h2 class="faq-section-title">Frequently asked questions</h2>
+                
+                <div class="faq-list">
+                    <!-- FAQ 1 -->
+                    <div class="faq-item">
+                        <button class="faq-trigger" aria-expanded="false">
+                            <span class="faq-question">WHAT SERVICES DOES SYNCRO SCALE PROVIDE?</span>
+                            <span class="faq-icon-plus"></span>
+                        </button>
+                        <div class="faq-panel">
+                            <p class="faq-answer">We offer end-to-end smart automations, AI integrations, workflow design, and digital transformation consulting. Our systems connect your communication channels directly into custom lead capture, qualification, and booking pipelines.</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 2 -->
+                    <div class="faq-item">
+                        <button class="faq-trigger" aria-expanded="false">
+                            <span class="faq-question">How do I get started with a consultation?</span>
+                            <span class="faq-icon-plus"></span>
+                        </button>
+                        <div class="faq-panel">
+                            <p class="faq-answer">Simply fill in your contact information below, or launch our interactive AI assistant floating on the bottom right. We will collect your requirements and schedule a discovery session directly on our calendar.</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 3 -->
+                    <div class="faq-item">
+                        <button class="faq-trigger" aria-expanded="false">
+                            <span class="faq-question">Can you integrate with existing CRM and business tools?</span>
+                            <span class="faq-icon-plus"></span>
+                        </button>
+                        <div class="faq-panel">
+                            <p class="faq-answer">Yes, we design custom integration bridges using robust APIs. Whether you use Salesforce, HubSpot, custom telephony channels, Google Calendar, or custom internal systems, we ensure seamless data and funnel flow.</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 4 -->
+                    <div class="faq-item">
+                        <button class="faq-trigger" aria-expanded="false">
+                            <span class="faq-question">Are the AI agents customizable to our brand voice?</span>
+                            <span class="faq-icon-plus"></span>
+                        </button>
+                        <div class="faq-panel">
+                            <p class="faq-answer">Absolutely. All voice and chat agents are initialized with deterministic instructions, guidelines, and guardrails custom-tailored to your industry, target audience, and brand guidelines.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Get In Touch Section (Contact Form) -->
+        <section class="section-contact" id="contact">
+            <div class="contact-container">
+                <h2 class="contact-title">Get in touch.</h2>
+                
+                <div class="form-wrapper">
+                    <!-- Form Error Alert -->
+                    <div id="form-error-alert" class="alert alert-error hidden">
+                        <span class="alert-icon">⚠️</span>
+                        <span class="alert-message">Please correct the highlighted fields.</span>
+                    </div>
+
+                    <!-- Ingestion Form (keeps original elements and IDs for index.js logic) -->
+                    <form id="emergency-intake-form" class="sleek-form-dark" novalidate>
+                        
+                        <!-- Full Name -->
+                        <div class="form-group-sleek">
+                            <input type="text" id="name" name="name" class="form-input-sleek-dark" required>
+                            <label for="name" class="form-label-sleek-dark">Full name</label>
+                            <span class="field-error-sleek" id="name-error"></span>
+                        </div>
+
+                        <!-- Email address -->
+                        <div class="form-group-sleek">
+                            <input type="email" id="email" name="email" class="form-input-sleek-dark" required>
+                            <label for="email" class="form-label-sleek-dark">Email address</label>
+                            <span class="field-error-sleek" id="email-error"></span>
+                        </div>
+
+                        <!-- Phone number -->
+                        <div class="form-group-sleek">
+                            <input type="tel" id="phone" name="phone" class="form-input-sleek-dark" required>
+                            <label for="phone" class="form-label-sleek-dark">Phone number</label>
+                            <span class="field-error-sleek" id="phone-error"></span>
+                        </div>
+
+                        <!-- What you want us to do (maps to damageType) -->
+                        <div class="form-group-sleek">
+                            <input type="text" id="damageType" name="damageType" class="form-input-sleek-dark" required>
+                            <label for="damageType" class="form-label-sleek-dark">What you want us to do</label>
+                            <span class="field-error-sleek" id="damageType-error"></span>
+                        </div>
+
+                        <!-- Choose your budget (maps to address) -->
+                        <div class="form-group-sleek">
+                            <select id="address" name="address" class="form-input-sleek-dark form-select-sleek-dark" required>
+                                <option value="" disabled selected hidden></option>
+                                <option value="Budget: Under $5,000">Under $5,000</option>
+                                <option value="Budget: $5,000 - $15,000">$5,000 - $15,000</option>
+                                <option value="Budget: $15,000 - $50,000">$15,000 - $50,000</option>
+                                <option value="Budget: $50,000+">$50,000+</option>
+                            </select>
+                            <label for="address" class="form-label-sleek-dark">Choose your budget</label>
+                            <span class="field-error-sleek" id="address-error"></span>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="submit-btn" class="btn-submit-bar-dark">
+                            <span class="btn-text">Submit request</span>
+                            <span class="loading-spinner hidden"></span>
+                            <svg class="btn-submit-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+                    </form>
+
+                    <!-- Success State Screen -->
+                    <div id="success-screen" class="success-screen-dark hidden">
+                        <div class="success-icon-container">
+                            <div class="success-checkmark-circle">
+                                <span class="success-checkmark">✓</span>
+                            </div>
+                        </div>
+                        <h3>Request Received!</h3>
+                        <p>Our automation engines have captured your project requirements.</p>
+                        <p class="success-subtext">A solutions architect will follow up at the contact details provided shortly.</p>
+                        <button id="reset-form-btn" class="btn-reset-form-dark">Submit Another Request</button>
+                    </div>
+                </div>
+
+                <div class="form-disclaimer">
+                    By submitting this form, you agree to our privacy policy and consent to receiving communications from Syncro Scale.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Block (Dark / Glowing Accent) -->
+    <footer class="app-footer-dark">
+        <div class="footer-container">
+            <div class="footer-top">
+                <div class="footer-brand-info">
+                    <h2 class="footer-title">Syncro Scale — Your source for smart automations.</h2>
+                </div>
+                
+                <div class="footer-links-grid">
+                    <div class="links-column">
+                        <h4>Company</h4>
+                        <a href="about.html">About</a>
+                        <a href="pricing.html">Pricing</a>
+                        <a href="resources.html">Resources</a>
+                        <a href="news.html">News</a>
+                    </div>
+                    <div class="links-column">
+                        <h4>Services</h4>
+                        <a href="automations.html">Automations</a>
+                        <a href="integrations.html">Integrations</a>
+                        <a href="workflow.html">Workflow</a>
+                        <a href="consulting.html">Consulting</a>
+                        <a href="api.html">Custom API</a>
+                    </div>
+                    <div class="links-column">
+                        <h4>Socials</h4>
+                        <a href="#">Instagram</a>
+                        <a href="#">Twitter</a>
+                        <a href="#">LinkedIn</a>
+                        <a href="#">Youtube</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    <p>&copy; 2026 Syncro Scale. All rights reserved. Clean Stack deterministic architecture.</p>
+                </div>
+                <div class="footer-bottom-links">
+                    <a href="privacy.html">Privacy Policy</a>
+                    <a href="terms.html">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chat Widget Floating Button -->
+    <div id="chat-widget-bubble" class="chat-bubble-btn">
+        <!-- Minimal infinity logo icon inside bubble -->
+        <svg class="bubble-logo-svg" viewBox="0 0 100 100" fill="none">
+            <path d="M 50,35 C 40,20 25,25 25,38 C 25,52 38,55 50,45 C 62,35 75,38 75,52 C 75,65 60,70 50,55" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none"/>
+        </svg>
+        <span class="bubble-badge animate-pulse hidden"></span>
     </div>
 
-    <script>
-        const micBtn = document.getElementById('micBtn');
-        const statusDiv = document.getElementById('status');
-        let ws, audioContext, scriptProcessor, mediaStream;
+    <!-- Chat Widget Container (Styled to match dark glowing theme) -->
+    <div id="chat-widget-container" class="chat-container-card hidden">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <span class="chat-status-dot animate-pulse"></span>
+                <div>
+                    <h4 id="chat-assistant-name">Syncro AI Specialist</h4>
+                    <p class="chat-status-text">Smart Automation Assistant</p>
+                </div>
+            </div>
+            <button id="chat-close-btn" class="chat-close-btn">&times;</button>
+        </div>
+        
+        <div id="chat-messages" class="chat-messages-body">
+            <!-- Messages are injected here -->
+        </div>
 
-        micBtn.addEventListener('click', async () => {
-            if (ws && ws.readyState === WebSocket.OPEN) { stopStreaming(); return; }
-            await startStreaming();
-        });
+        <div id="chat-status-indicator" class="chat-status-indicator hidden">
+            <span class="status-spinner"></span> <span id="chat-status-text">Thinking...</span>
+        </div>
 
-        async function startStreaming() {
-            try {
-                statusDiv.innerText = "Status: Connecting to Pipe...";
-                ws = new WebSocket(`ws://${window.location.host}/voice-stream`);
-                
-                ws.onopen = async () => {
-                    statusDiv.innerText = "Status: Connected! SPEAK NOW";
-                    micBtn.classList.add('recording');
-                    micBtn.innerText = "Stop Streaming";
+        <form id="chat-input-form" class="chat-input-area">
+            <input type="text" id="chat-user-input" placeholder="Ask about automations..." autocomplete="off" required>
+            <button type="submit" id="chat-send-btn" class="chat-send-btn">
+                <span class="send-icon">➔</span>
+            </button>
+        </form>
+    </div>
 
-                    // 1. Force the audio context to OpenAI's exact 24kHz format
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-                    
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    const source = audioContext.createMediaStreamSource(mediaStream);
-
-                    // 2. Create raw processor node
-                    scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-                    
-                    scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
-                        if (ws.readyState !== WebSocket.OPEN) return;
-
-                        const inputBuffer = audioProcessingEvent.inputBuffer;
-                        const float32Data = inputBuffer.getChannelData(0);
-
-                        // 3. Convert Float32 microphone data to Int16 PCM array
-                        const pcm16Buffer = new Int16Array(float32Data.length);
-                        for (let i = 0; i < float32Data.length; i++) {
-                            let s = Math.max(-1, Math.min(1, float32Data[i]));
-                            pcm16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-                        }
-
-                        // 4. Clean Base64 pack without data headers
-                        const binaryString = String.fromCharCode.apply(null, new Uint8Array(pcm16Buffer.buffer));
-                        const base64Audio = btoa(binaryString);
-
-                        ws.send(JSON.stringify({ event: "audio_data", data: base64Audio }));
-                    };
-
-                    source.connect(scriptProcessor);
-                    scriptProcessor.connect(audioContext.destination);
-                };
-
-                ws.onmessage = async (event) => {
-                    try {
-                        const msg = JSON.parse(event.data);
-                        if (msg.event === "audio_chunk") {
-                            const audio = new Audio("data:audio/wav;base64," + msg.data);
-                            audio.play();
-                        }
-                    } catch(e) {}
-                };
-
-                ws.onclose = () => stopStreaming();
-            } catch (err) {
-                console.error(err);
-                statusDiv.innerText = "Status: Hardware error.";
-            }
-        }
-
-        function stopStreaming() {
-            statusDiv.innerText = "Status: Disconnected";
-            micBtn.classList.remove('recording');
-            micBtn.innerText = "Start Streaming";
-            
-            if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
-            if (audioContext) { audioContext.close(); audioContext = null; }
-            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
-            if (ws) { ws.close(); ws = null; }
-        }
-    </script>
+    <script src="index.js"></script>
 </body>
 </html>

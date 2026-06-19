@@ -43,7 +43,24 @@ export class OutboundProcessor {
     return `You are an elite B2B copywriter for Agentic Nexus. Tone is conversational and direct. Focus on saving manual labor.`;
   }
 
-  public async processRawOutboundLead(lead: LeadVector): Promise<ProcessingResult> {
+  public async generateLeadDraft(
+    lead: LeadVector, 
+    templateNiche: string,
+    customTemplate?: { subject_template: string; body_prompt: string; is_static: number }
+  ): Promise<{ subject: string; body: string }> {
+    const bizName = lead.businessName || 'Business Owner';
+    const contact = lead.contactName || 'there';
+    const cleanBusinessName = bizName.replace(/\b(llc|inc|co|corp|& mitigation|group)\b/gi, '').trim();
+
+    return this.mailer.generateSequenceDraft({
+      contactName: contact,
+      businessName: cleanBusinessName,
+      email: lead.email,
+      notes: lead.niche
+    }, templateNiche, customTemplate);
+  }
+
+  public async processRawOutboundLead(clientId: string, lead: LeadVector): Promise<ProcessingResult> {
     try {
       const bizName = lead.businessName || 'Business Owner';
       const contact = lead.contactName || 'there';
@@ -53,7 +70,7 @@ export class OutboundProcessor {
       const activeSystemPrompt = this.getNicheSystemPrompt(lead.niche);
 
       // Trigger the existing OutboundSequenceManager to generate AND SEND via Resend
-      const result = await this.mailer.generateCampaignSequence({
+      const result = await this.mailer.generateCampaignSequence(clientId, {
         contactName: contact,
         businessName: cleanBusinessName,
         email: lead.email,

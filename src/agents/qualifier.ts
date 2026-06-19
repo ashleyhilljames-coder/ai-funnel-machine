@@ -16,6 +16,7 @@ export type QualificationResult = z.infer<typeof QualificationResultSchema>;
 const SYSTEM_PROMPT = `You are a B2B lead qualification agent for a sales funnel.
 Evaluate incoming leads and return a structured qualification result.
 Score leads 0–100 based on: completeness of contact info, presence of a company, and funnel step.
+CRITICAL RULE: If a lead does not have a phone number (i.e. phone field is missing, empty, or set to N/A), the score must be capped below 60, and qualified must be false.
 A lead is qualified if score >= 60.`;
 
 export async function QualifierAgent(lead: Lead): Promise<QualificationResult> {

@@ -7,6 +7,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index_new.ts",
+    "import-leads": "tsx src/outbound/importLeads.ts",
+    "scrape-leads": "tsx src/outbound/scrapeGoogleLeads.ts",
     "test:lead": "tsx src/test-lead.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,6 +28,7 @@
     "nodemailer": "^8.0.10",
     "openai": "^6.41.0",
     "resend": "^6.12.4",
+    "twilio": "^6.0.2",
     "uuid": "^14.0.0",
     "ws": "^8.21.0",
     "zod": "^4.4.3"

@@ -64,12 +64,12 @@ async function runMainOutboundPipeline() {
         console.log(`🌀 Processing row [${i + 1}/${rawLeads.length}]: ${currentLead.businessName}`);
         
         // This triggers the new processor, which uses OpenAI and sends immediately via Resend
-        const result = await outboundEngine.processRawOutboundLead(currentLead);
+        const result = await outboundEngine.processRawOutboundLead(clientId, currentLead);
 
         if (result.status === 'contacted' && result.sequence) {
           totalSuccessfulRows++;
           totalEmailsDispatched++; // Track successful Resend firings directly
-          guard.registerClientLead(currentLead.email, clientId, false);
+          guard.registerClientLead(currentLead.email, clientId, false, currentLead.businessName, currentLead.niche);
           
           console.log(`✅ Success! Tracking ID: ${result.prospect.id}`);
           console.log(`⚡ [RESEND] Personal note dispatched directly to ${currentLead.email}!`);
