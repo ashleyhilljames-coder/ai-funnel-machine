@@ -1,0 +1,62 @@
+{
+  "title": "1.5 Outbound Lead Scraper & Multi-Tenant Routing",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>In B2B outreach, finding and contacting leads involves parsing data from lists. Businesses compile lead databases in spreadsheet formats (CSV sheets). If an automation tries to process these files in place, we risk sending the same outreach campaign to the same prospect multiple times if the program runs twice or is interrupted.</p><p>To prevent this, the AI Funnel Machine uses an <strong>Intake and Archive Router Pattern</strong>. The system maintains two separate directories:</p><ul><li><strong>`intake/` Directory:</strong> The entry queue. Whenever you buy a new lead list, you drop the CSV file here. The system monitors this folder.</li><li><strong>`archive/` Directory:</strong> The storage vault. As soon as the system finishes reading a CSV file and sending the emails, it immediately moves the file to the archive directory, appending a timestamp to the file name.</li></ul><p>By moving the file out of the intake folder as soon as it is processed, we guarantee that the same file is never run twice. This separates client workspaces in our multi-tenant setup, allowing different clients to drop lists into their own directories without causing overlap.</p><h3>2. Code-Level & File Walkthrough</h3><p>The outbound processing queue is managed in <strong>[run-outbound.ts](file:///Users/ashleybutler/ai-funnel-machine/run-outbound.ts)</strong>. Let's look at the outer loop in the script:</p><pre>const pendingFiles = router.getPendingCSVFiles();\nif (pendingFiles.length === 0) {\n  console.log('No pending CSV files found.');\n  return;\n}\n\nfor (const filePath of pendingFiles) {\n  const rawLeads = await scraper.parseCSVFile(filePath);\n  for (const currentLead of rawLeads) {\n    if (guard.isDuplicateForClient(currentLead.email, clientId)) {\n      continue; \n    }\n    const result = await outboundEngine.processRawOutboundLead(clientId, currentLead);\n    if (result.status === 'contacted') {\n      guard.registerClientLead(currentLead.email, clientId, ...);\n    }\n  }\n  router.archiveProcessedFile(filePath);\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-5:</strong> We fetch any files waiting in the <code>intake/</code> directory. If there are no files, the script exits immediately.</li><li><strong>Lines 7-8:</strong> We loop through each waiting file and parse its rows into structured JavaScript objects.</li><li><strong>Lines 9-16:</strong> For each lead, we run a check against our local database (LeadGuard) to ensure the email hasn't been contacted before. If it's a fresh lead, we call <code>processRawOutboundLead</code> to run the AI personalization sequence and dispatch the email via Resend. If successful, we register it in SQLite.</li><li><strong>Line 17:</strong> Once all rows in a file are processed, we call <code>router.archiveProcessedFile</code>, moving the file to `archive/` so it is not processed in future runs.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Verify that dropping a lead file into the intake queue triggers automated outreach and archives the processed file correctly.</p><ul><li><strong>Step A:</strong> Ensure you have a mock CSV file in your <code>intake/</code> directory. If not, create a file named <code>leads_test.csv</code> inside the folder <code>/Users/ashleybutler/ai-funnel-machine/intake/</code> with the following columns:</li><pre>businessName,email,firstName,lastName,niche,phone,website\n\"Pro Restoration\",\"pro@example.com\",\"John\",\"Smith\",\"water mitigation\",\"555-0199\",\"http://pro.com\"</pre><li><strong>Step B:</strong> Run the outbound pipeline script in your terminal by executing:</li><pre>npx tsx run-outbound.ts --client=default_client</pre><li><strong>Step C:</strong> Inspect the console. Verify that it output: <code>Parsed 1 records</code>, ran the personalization sequence, and completed successfully.</li><li><strong>Step D:</strong> Open your Finder. Confirm that <code>leads_test.csv</code> has been removed from the <code>intake/</code> directory and is now sitting in the <code>archive/</code> folder with a timestamp prefix.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary operational reason for moving processed CSV files from 'intake/' to 'archive/'?",
+      "options": [
+        "To speed up the network speed of the Resend API.",
+        "To prevent duplicate outreach campaigns by ensuring a CSV file is only processed once.",
+        "To compress the files into ZIP archives.",
+        "To sync the files with Google Calendar."
+      ],
+      "answer": 1,
+      "explanation": "Moving the file to the archive folder immediately after processing ensures that a subsequent execution of the script will not pick up the same file again, preventing duplicate emails."
+    },
+    {
+      "question": "Which command executes the outbound sequence runner for the client 'roofing_sc'?",
+      "options": [
+        "npm run build",
+        "npx tsx run-outbound.ts --client=roofing_sc",
+        "node dist/index.js",
+        "python run-outbound.py"
+      ],
+      "answer": 1,
+      "explanation": "The script run-outbound.ts parses command-line arguments. Specifying --client=roofing_sc directs the engine to load client configs for Sin City Roof Crew."
+    },
+    {
+      "question": "What happens if a lead email inside a CSV file is already present in the SQLite database for the selected client?",
+      "options": [
+        "The system throws an unhandled exception and stops the script.",
+        "The LeadGuard database flags the duplicate and skips the lead, moving to the next row.",
+        "The system sends a duplicate email to the prospect anyway.",
+        "The file is deleted immediately."
+      ],
+      "answer": 1,
+      "explanation": "If a duplicate email is found in SQLite for that client, the script prints a warning log and skips processing that specific row, preserving the client's sender reputation."
+    },
+    {
+      "question": "Which class is responsible for locating pending CSV files inside the intake folder?",
+      "options": [
+        "OutboundProcessor",
+        "IntakeRouter",
+        "LeadGuard",
+        "LeadScraper"
+      ],
+      "answer": 1,
+      "explanation": "IntakeRouter's primary job is folder management: listing files in the intake queue and archiving them to the archive vault."
+    },
+    {
+      "question": "What API is called by the OutboundProcessor to send the actual outreach emails to qualified prospects?",
+      "options": [
+        "Twilio SMS",
+        "Resend API",
+        "Slack Webhooks",
+        "Google Sheets API"
+      ],
+      "answer": 1,
+      "explanation": "The OutboundProcessor invokes the Resend API to handle outbound email deliveries with high deliverability rates."
+    }
+  ]
+}

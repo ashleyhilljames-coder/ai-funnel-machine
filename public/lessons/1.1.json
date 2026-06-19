@@ -1,0 +1,62 @@
+{
+  "title": "1.1 Architecture of the AI Funnel Machine",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>The <strong>AI Funnel Machine</strong> is designed to solve a major problem in modern business automations: <strong>API Timeouts and Lead Loss</strong>.</p><p>When a lead submits their contact information, traditional websites try to process the lead immediately. This process might involve calling an LLM (like Claude or GPT) to qualify the lead, looking up available slots in a Google Calendar, and sending out emails. LLM API calls can take anywhere from 5 to 15 seconds to respond. If multiple leads arrive at once, or if the API is slow, the web server runs out of capacity or times out. This means the client's browser gets a 504 Gateway Timeout, and the business loses the lead forever.</p><p>The AI Funnel Machine solves this using an <strong>Asynchronous Event-Driven Architecture</strong>. Instead of processing the lead on the spot, the server validates it quickly, saves it in a queue, and immediately tells the browser 'Received!' (HTTP 202 Accepted). A separate background worker then pulls the lead from the queue and processes it step-by-step. If a step fails, the queue automatically retries it, ensuring no lead is ever dropped.</p><h4>Analogy of the Core Components:</h4><ul><li><strong>Zod Validation (The Bouncer):</strong> Inspects incoming lead data immediately at the door. If the email is invalid or name is missing, it rejects it right away before wasting any resources.</li><li><strong>GCP Pub/Sub Queue (The Restaurant Order Docket):</strong> Acts as a secure queue. When a new lead arrives, we write a ticket and clip it to the queue. The ticket stays there safely until the chef is ready.</li><li><strong>Background Worker (The Kitchen Chef):</strong> A separate process running in the background. It takes tickets from the Pub/Sub docket one-by-one and cooks them (running LLM scripts, database updates, calendar bookings).</li><li><strong>SQLite Dupe Check (The Reservation Log):</strong> A local database that keeps track of everyone who has ever contacted the business, ensuring we don't send duplicate automated outreach emails to the same prospect.</li></ul><pre>📊 ARCHITECTURE FLOW:\n\nPOST /api/leads ──> Zod Schema Check ──> Publish to Pub/Sub ──> HTTP 202 Response\n                                                                  │\n                                                                  ▼\n                                                            [Pub/Sub Queue]\n                                                                  │\n                                                                  ▼\n                                                        Background Worker (Subscription)\n                                                                  │\n                                                                  ▼\n                                                       1. LeadGuard (SQLite Dupe Check)\n                                                       2. Qualifier Agent (Claude)\n                                                       3. Evaluator Agent (Claude)\n                                                       4. Calendar Booker (Google Calendar)</pre>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Verify that your local environment is configured and the background services can process a mock lead successfully.</p><ul><li><strong>Step A:</strong> Open your terminal and navigate to the project directory: <code>/Users/ashleybutler/ai-funnel-machine</code>.</li><li><strong>Step B:</strong> Verify that your environment variables are configured correctly in the <code>.env</code> file (specifically <code>GOOGLE_APPLICATION_CREDENTIALS</code> pointing to <code>gcp-key.json</code>).</li><li><strong>Step C:</strong> Execute the lead integration runner in your terminal: <code>npm run test:lead</code>.</li><li><strong>Step D:</strong> Confirm success by verifying that the console prints a qualification score and shows a mock appointment booked on your Google Calendar client console. If it fails with a 'Topic Not Found' error, run <code>npx tsx src/setup-pubsub.ts</code> first.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary problem solved by using an asynchronous queue (like GCP Pub/Sub)?",
+      "options": [
+        "It speeds up the compilation of TypeScript files.",
+        "It prevents API timeouts and lead loss by decoupling slow LLM processing from the initial HTTP ingestion.",
+        "It automatically translates JavaScript objects into SQL queries.",
+        "It enables client-side animations in the browser."
+      ],
+      "answer": 1,
+      "explanation": "Since calling LLM APIs takes several seconds, handling this inline inside the HTTP request loop causes timeout errors. A queue allows the server to instantly respond with a success status and process the lead in the background."
+    },
+    {
+      "question": "In our architecture, what does Zod Validation act as?",
+      "options": [
+        "A relational database management system.",
+        "A gatekeeper that verifies the format and structure of incoming JSON payloads before they enter the system.",
+        "An AI agent that schedules meetings on Google Calendar.",
+        "An email delivery API."
+      ],
+      "answer": 1,
+      "explanation": "Zod is a schema declaration and validation library. It acts as a gatekeeper, verifying that payloads contain required fields (e.g., valid email formatting and phone numbers) before processing."
+    },
+    {
+      "question": "Which HTTP status code is used to indicate that a lead has been successfully queued but not yet qualified or booked?",
+      "options": [
+        "200 OK",
+        "201 Created",
+        "202 Accepted",
+        "400 Bad Request"
+      ],
+      "answer": 2,
+      "explanation": "HTTP 202 Accepted indicates that the request has been accepted for processing, but the processing has not been completed. This is ideal for asynchronous architectures."
+    },
+    {
+      "question": "What happens if the LLM API is down when a lead is being qualified?",
+      "options": [
+        "The lead is permanently deleted from the system.",
+        "The background worker crashes and the database is corrupted.",
+        "The message remains in the Pub/Sub queue and is automatically retried later.",
+        "The client browser receives a 500 error page."
+      ],
+      "answer": 2,
+      "explanation": "Since the lead is processed in the background from a message queue, any processing failure (like an API outage) results in the message being returned to the queue to be retried after a backoff period."
+    },
+    {
+      "question": "Which file serves as the main entrance for the HTTP server in this project?",
+      "options": [
+        "src/agents/qualifier.ts",
+        "src/server.ts",
+        "src/index_new.ts",
+        "package.json"
+      ],
+      "answer": 2,
+      "explanation": "src/index_new.ts is the main server file that boots the Express server, establishes WebSocket connections, and listens on port 3000."
+    }
+  ]
+}

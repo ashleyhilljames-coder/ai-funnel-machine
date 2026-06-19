@@ -1,0 +1,62 @@
+{
+  "title": "2.2 Lead Sourcing, Scraping, & List Cleaning",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>Before launching an outbound outreach campaign, you need contacts. The highest-converting leads for local service automations are found by scraping <strong>Google Maps (Google Places API)</strong>. When a business is listed on Google Maps but does not have a functional website, or lists an invalid phone number, they are prime candidates for operations automation.</p><p>However, raw lists from web scrapers are messy. They contain duplicate business names, missing emails, unstructured addresses, and malformed phone numbers. Running campaigns on raw data leads to massive email bounce rates (emails sent to addresses that don't exist) and invalid phone dispatches. If your email bounce rate exceeds **2%**, email servers like Google and Outlook will start blocking your sender domains.</p><p><strong>List Sanitization</strong> is the process of cleaning this raw data:</p><ul><li><strong>Domain Extraction:</strong> Parsing a business's website URL (e.g. <code>https://www.lasvegasplumbing.com/contact</code>) to extract the clean domain (<code>lasvegasplumbing.com</code>).</li><li><strong>Email Generation Fallbacks:</strong> If a business lists a website but no email is found, we generate standard fallbacks (like <code>info@domain.com</code>) or slugify the business name (e.g. <code>contact@las-vegas-plumbing.com</code>).</li><li><strong>Niche Categorization:</strong> Automatically classifying the lead type based on search queries (e.g., placing queries for 'roof leaks' under the 'Storm / Roof Leak' damage type bucket).</li></ul><h3>2. Code-Level & File Walkthrough</h3><p>The lead sourcing and cleaning mechanisms are located in:</p><ul><li><strong>[scrapeGoogleLeads.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/scrapeGoogleLeads.ts):</strong> Fetches places from the Google API, sanitizes fields, and writes them to Google Sheets/SQLite.</li></ul><p>Let's look at the sanitization functions in <code>scrapeGoogleLeads.ts</code>:</p><pre>function extractDomain(url: string): string | null {\n  try {\n    const cleanUrl = url.trim().toLowerCase();\n    const withProtocol = cleanUrl.startsWith('http') ? cleanUrl : `http://${cleanUrl}`;\n    const parsed = new URL(withProtocol);\n    const host = parsed.hostname;\n    return host.startsWith('www.') ? host.slice(4) : host;\n  } catch (err) {\n    return null;\n  }\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-4:</strong> We trim whitespace and force the URL to lowercase. We ensure it starts with `http` or `https` so the standard JavaScript `URL` parser does not throw an error on raw domains.</li><li><strong>Lines 5-6:</strong> We instantiate the `URL` object and extract its `hostname` property (which isolates the domain name from paths or parameters).</li><li><strong>Line 7:</strong> If the hostname starts with `www.`, we strip it off to isolate the root domain (e.g., converting `www.expertplumbing.com` to `expertplumbing.com`). This domain is then used to generate clean outreach email fallbacks.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Run the automated Google Lead Scraper locally and verify that leads are cleaned and classified correctly.</p><ul><li><strong>Step A:</strong> Open your terminal and navigate to <code>/Users/ashleybutler/ai-funnel-machine</code>.</li><li><strong>Step B:</strong> Ensure your Google API Key is set in your <code>.env</code> file (or prepare to run the built-in simulator mode if no key is available).</li><li><strong>Step C:</strong> Execute the scraper command in your terminal:</li><pre>npm run scrape-leads</pre><li><strong>Step D:</strong> Inspect the console output. Confirm that the scraper successfully classified search terms (e.g., assigning a 'roofing' query to 'Storm / Roof Leak') and generated clean fallback email coordinates for businesses missing contact details.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary operational danger of having a cold email campaign bounce rate greater than 2%?",
+      "options": [
+        "The Google Sheets API throws a write error.",
+        "Email servers (Google/Outlook) identify your domain as a spam source, causing your emails to go directly to spam folders.",
+        "Your TypeScript files will fail to compile.",
+        "The Twilio account balance is immediately drained."
+      ],
+      "answer": 1,
+      "explanation": "High bounce rates indicate a low-quality list. Email service providers monitor bounce rates closely; exceeding a 2% threshold signals spam behavior, resulting in domain reputation suspension."
+    },
+    {
+      "question": "If a scraped company name is 'Vegas Valley Roofing' and it does not have a website listed, how does the system slugify it to generate a fallback contact email?",
+      "options": [
+        "info@vegasvalleyroofing.com",
+        "contact@vegas-valley-roofing.com",
+        "vegas_valley_roofing@gmail.com",
+        "admin@vegasvalley.com"
+      ],
+      "answer": 1,
+      "explanation": "The slugify fallback logic removes special characters, lowercase-folds the string, and replaces spaces with hyphens, resulting in 'contact@vegas-valley-roofing.com'."
+    },
+    {
+      "question": "Which JS object is utilized inside the extractDomain function to safely parse and extract hostname details from a URL string?",
+      "options": [
+        "JSON.parse()",
+        "new URL()",
+        "String.split()",
+        "Array.filter()"
+      ],
+      "answer": 1,
+      "explanation": "The built-in browser/Node URL object parses web addresses according to specs, isolating the hostname from query parameters and file paths."
+    },
+    {
+      "question": "Which query terms would cause the determineDamageType helper to classify a lead as 'Water Damage'?",
+      "options": [
+        "burn, smoke, fire",
+        "roof, storm, wind",
+        "plumb, water, leak, flood",
+        "mold, mildew"
+      ],
+      "answer": 2,
+      "explanation": "The determineDamageType function checks for query substrings; 'plumb', 'water', 'leak', and 'flood' map directly to 'Water Damage'."
+    },
+    {
+      "question": "Which script command launches the lead import/scraping sequence in the project package.json?",
+      "options": [
+        "npm run build",
+        "npm run scrape-leads",
+        "npm run test:lead",
+        "npm run dev"
+      ],
+      "answer": 1,
+      "explanation": "The script 'scrape-leads' maps to `tsx src/outbound/scrapeGoogleLeads.ts` to run the mapping scraper."
+    }
+  ]
+}

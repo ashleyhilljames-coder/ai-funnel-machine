@@ -1,0 +1,62 @@
+{
+  "title": "3.1 The Flawless Onboarding Protocol",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>Once a client signs your 1-page agreement and pays the setup fee, you enter the most critical phase of the customer relationship: <strong>Onboarding</strong>. The first 72 hours determine whether a client feels excited and secure, or experiences buyer's remorse. A sloppy onboarding protocol where you repeatedly email the client asking for forgotten passwords or missing details makes you look like an amateur.</p><p>To ensure a flawless onboarding experience, we use a structured **Onboarding Protocol** that gathers all client assets at once:</p><ol><li><strong>Step 1: The Intake Form:</strong> A structured questionnaire that collects their business name, niche services, target service zip codes, dispatcher contact numbers, and average transaction values.</li><li><strong>Step 2: Google Calendar Sharing:</strong> We instruct the client to share their specific Google Calendar with our robot service account email (<code>calendar-bot@...</code>) and grant **'Make changes to events'** permissions.</li><li><strong>Step 3: Twilio Provisioning:</strong> We buy a clean local phone number for their business inside our Twilio console and configure the voice and SMS webhooks.</li><li><strong>Step 4: Notification Hooks:</strong> We set up their destination notification feeds, linking our system to their Slack workspace webhooks or SMS notification phones so they get alert notifications the moment a lead is captured.</li></ol><h3>2. Code-Level & File Walkthrough</h3><p>Onboarding results in a new row in the database, configuring their notification hooks and system routing. The files responsible for these setups include:</p><ul><li><strong>[leadGuard.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Contains the database columns for notification routing (<code>slack_webhook_url</code>, <code>notification_phone</code>, <code>notify_on_lead</code>).</li><li><strong>[notificationService.ts](file:///Users/ashleybutler/ai-funnel-machine/src/services/notificationService.ts):</strong> Evaluates database triggers and fires Slack API hooks or Twilio SMS dispatches when new leads are registered.</li></ul><p>Let's look at the notification router inside <code>notificationService.ts</code>:</p><pre>export async function triggerLeadNotifications(clientId: string, lead: Lead, bookingResult?: BookingResult) {\n  const settings = leadGuard.getClientSettings(clientId);\n  if (!settings) return;\n\n  if (settings.slackWebhookUrl) {\n    await sendSlackNotification(settings.slackWebhookUrl, lead, bookingResult);\n  }\n  if (settings.notificationPhone && settings.notifyOnLead === 1) {\n    await sendSMSNotification(settings.notificationPhone, lead, bookingResult);\n  }\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-2:</strong> When a lead is captured, we pull the specific client settings from SQLite based on the `clientId`.</li><li><strong>Lines 4-6:</strong> If the client has configured a Slack webhook URL during onboarding, we compile a rich message payload (listing lead name, contact details, and calendar slot) and post it to their Slack channel.</li><li><strong>Lines 7-9:</strong> If the client prefers text message notifications (and `notifyOnLead` is enabled), we fire an SMS alert to their notification phone number, keeping their dispatchers updated instantly.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Verify that your environment is prepared to route notifications and review the notification configuration parameters.</p><ul><li><strong>Step A:</strong> Open the file: <code>/Users/ashleybutler/ai-funnel-machine/src/services/notificationService.ts</code> (if configured) or locate it in the source folder.</li><li><strong>Step B:</strong> Locate the <code>triggerLeadNotifications</code> function. Notice how it checks for <code>slackWebhookUrl</code> and <code>notificationPhone</code>.</li><li><strong>Step C:</strong> Open your terminal. If you want to check your database configuration, verify that the <code>client_settings</code> table schema has the appropriate column setups by running:</li><pre>npx tsx verify_voice_settings.ts</pre><li><strong>Step D:</strong> The test logs confirm database read/write functionalities. During real onboarding, you will populate these columns with the client's webhook URLs collected from their onboarding intake form.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary operational objective of the Onboarding Protocol?",
+      "options": [
+        "To explain model weight settings to the client.",
+        "To gather all business rules, calendar permissions, and notification configurations at once, ensuring a smooth and professional setup.",
+        "To write a new Docker image file.",
+        "To delete old SQLite database records."
+      ],
+      "answer": 1,
+      "explanation": "Structured onboarding ensures all assets (calendar shares, company niches, notification webhooks) are gathered in one step, avoiding back-and-forth emails."
+    },
+    {
+      "question": "Which permission setting must the client choose when sharing their calendar with the service account?",
+      "options": [
+        "See only free/busy",
+        "Make changes to events",
+        "Delete calendar settings",
+        "View description fields only"
+      ],
+      "answer": 1,
+      "explanation": "The Service Account requires 'Make changes to events' permissions to write new events and schedule dispatches programmatically."
+    },
+    {
+      "question": "Which database columns in client_settings route automated alerts to client channels when a lead is booked?",
+      "options": [
+        "google_calendar_id and name",
+        "slack_webhook_url, notification_phone, and notify_on_lead",
+        "password and voice_tone",
+        "client_id and niche"
+      ],
+      "answer": 1,
+      "explanation": "These fields store the Slack and SMS routing endpoints. If populated, the notification service triggers alerts automatically."
+    },
+    {
+      "question": "How does the notificationService determine whether to send a Slack alert vs. an SMS text alert?",
+      "options": [
+        "By asking the user via email.",
+        "It checks if the respective fields (slack_webhook_url or notification_phone) are populated in the database settings.",
+        "It randomizes the selection.",
+        "It always sends both to every user globally."
+      ],
+      "answer": 1,
+      "explanation": "The notification router checks for the presence of the fields in SQLite, firing notifications to Slack, SMS, or both, depending on which values are configured."
+    },
+    {
+      "question": "Where does the notificationService fetch the client's notification settings from?",
+      "options": [
+        "From the browser's cookies.",
+        "From the client_settings SQLite database table via LeadGuard.",
+        "From a public config file on Vercel.",
+        "Inside the package.json file."
+      ],
+      "answer": 1,
+      "explanation": "Client settings are queried from the client_settings SQLite database table to resolve client configurations dynamically during runtime."
+    }
+  ]
+}

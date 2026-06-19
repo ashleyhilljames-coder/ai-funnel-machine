@@ -1,0 +1,62 @@
+{
+  "title": "3.3 Launch Sequence & First 72 Hours Audit",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>Launching an AI voice agent is not a 'set-it-and-forget-it' project. No matter how much you test, real human users will say unexpected things during live calls. They might speak in broken sentences, interrupt the bot, ask about unrelated services, or request immediate call backs.</p><p>To ensure elite service quality, you must execute a **First 72-Hour Audit** after launching a new tenant:</p><ul><li><strong>Audio & Transcript Review:</strong> Listen to recordings and read the conversational transcripts stored in your database. Look for moments where the bot paused too long, cut off the customer, or failed to collect critical info.</li><li><strong>Identifying Edge Cases:</strong> Catch scenarios the bot did not know how to handle (e.g., a customer saying 'I'm calling from my neighbor's house because mine is flooded, but my address is...').</li><li><strong>Prompt Tuning:</strong> Update the agent's instructions in SQLite based on your findings, adding explicit rules to handle these edge cases.</li></ul><p>By audit-reviewing conversations during the first 72 hours, you can optimize the prompts before the client notices any issues, securing high client trust.</p><h3>2. Code-Level & File Walkthrough</h3><p>Reviewing calls is made possible by database logging. Our system logs every call session's metadata, duration, and transcripts. Let's look at the database schema and query helpers:</p><ul><li><strong>[call_logs Table in SQLite](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Stores structural data for transcripts (<code>transcript</code>, <code>recording_path</code>, <code>action_taken</code>, <code>started_at</code>).</li><li><strong>[leadGuard.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Exposes functions to write logs when WebSocket sessions disconnect.</li></ul><p>Let's look at the database table schema for logging call metadata in <code>leadGuard.ts</code>:</p><pre>CREATE TABLE IF NOT EXISTS call_logs (\n  id TEXT PRIMARY KEY,\n  client_id TEXT NOT NULL,\n  source TEXT NOT NULL,\n  caller_name TEXT DEFAULT '',\n  caller_phone TEXT DEFAULT '',\n  transcript TEXT DEFAULT '',\n  recording_path TEXT DEFAULT '',\n  started_at TEXT NOT NULL,\n  duration_seconds INTEGER DEFAULT 0\n);</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>transcript:</strong> The system logs the full conversation script. If a call experiences issues, the administrator can read the transcript to find exactly which turn of conversation caused the failure.</li><li><strong>duration_seconds & recording_path:</strong> Stores session duration and the local directory path where raw audio files (e.g., `.wav`) are saved, allowing administrators to audit call quality.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Inspect the database logging schema and check the call logs table configuration.</p><ul><li><strong>Step A:</strong> Open the file: <code>/Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts</code>.</li><li><strong>Step B:</strong> Locate the <code>call_logs</code> table schema inside the <code>initializeSchema</code> method on line 33.</li><li><strong>Step C:</strong> Review the logging columns. Confirm that the table stores <code>transcript</code> and <code>recording_path</code>.</li><li><strong>Step D:</strong> Open your terminal. Run the voice verification test suite to ensure the database starts and updates configurations cleanly:</li><pre>npx tsx verify_voice_settings.ts</pre></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary operational objective of the First 72-Hour Audit after launch?",
+      "options": [
+        "To delete old SQLite backup files.",
+        "To review real user call transcripts and audio logs to identify conversational edge cases and tune prompts for accuracy.",
+        "To rewrite the Express router endpoints.",
+        "To deploy the server to a different cloud region."
+      ],
+      "answer": 1,
+      "explanation": "Auditing live calls reveals how real users talk to the bot, allowing developers to optimize prompt instructions and resolve conversational issues early."
+    },
+    {
+      "question": "Which database table stores the full conversational transcripts of incoming phone calls?",
+      "options": [
+        "lead_registry",
+        "client_settings",
+        "call_logs",
+        "invoice_ledger"
+      ],
+      "answer": 2,
+      "explanation": "The call_logs table records session metadata, including caller name, duration, and the complete text transcript."
+    },
+    {
+      "question": "What action should you take if a transcript shows the AI agent got confused by a customer asking to be called back?",
+      "options": [
+        "Delete the customer's email from the database.",
+        "Update the voice_instructions in SQLite, instructing the bot on how to capture call-back numbers and log them as callbacks.",
+        "Disable the Twilio phone number.",
+        "Rebuild the entire system from scratch."
+      ],
+      "answer": 1,
+      "explanation": "Prompt tuning is the standard solution. Modifying system instructions to handle common requests (like call-back requests) improves agent capabilities."
+    },
+    {
+      "question": "Why is the duration_seconds column logged in the call_logs table?",
+      "options": [
+        "To record network speed.",
+        "To track call lengths for billing client usage retainers and auditing system efficiency.",
+        "To check if the SQLite file size is too big.",
+        "To schedule Google Calendar updates."
+      ],
+      "answer": 1,
+      "explanation": "Call duration tracks system usage, enabling accurate usage billing and helping audit agent performance."
+    },
+    {
+      "question": "Where does the system store the raw audio recording files for audit review?",
+      "options": [
+        "Directly inside Google Sheets.",
+        "Inside the filesystem path referenced in the recording_path column.",
+        "Inside the git configuration folder.",
+        "Inside Vercel environment variables."
+      ],
+      "answer": 1,
+      "explanation": "Audio recordings are saved in the local filesystem, with their location recorded in the database's recording_path column for retrieval."
+    }
+  ]
+}

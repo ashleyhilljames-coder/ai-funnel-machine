@@ -1,0 +1,62 @@
+{
+  "title": "2.7 Proposals, Pricing Models, & Closings",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>To run a highly profitable AI agency, you must choose the right pricing model. Selling AI as a cheap one-time setup (e.g. charging $500 to build a chatbot) is a recipe for business failure. You do not want to trade hours for dollars. Instead, we use a <strong>Hybrid Value-Based Pricing Model</strong>:</p><ul><li><strong>1. The Setup Fee ($1,500 - $5,000):</strong> A one-time upfront fee. This covers custom prompt engineering, SQLite database provisioning, Twilio phone integration, calendar configurations, and initial lead tests. It establishes client commitment.</li><li><strong>2. The Monthly Retainer ($1,000 - $3,000/mo):</strong> A recurring monthly fee. This covers continuous maintenance, hosting, template updates, API token costs, and access to the dashboard. This recurring fee is where you build long-term business wealth.</li></ul><p>When closing the deal, **never send a 20-page proposal** filled with corporate terms. Long proposals create confusion, and confused buyers do not buy. Instead, send a **1-Page Agreement** that covers three exact points: <strong>Scope of Work</strong> (what we build), <strong>Investment</strong> (setup fee + retainer), and <strong>Timeline</strong> (when we launch).</p><h3>2. Code-Level & File Walkthrough</h3><p>To support this billing structure, our backend database tracks client activity and usage limits, allowing us to enforce retainers and invoice based on resource usage. Let's look at the database tables configured for this task:</p><ul><li><strong>[invoice_ledger Table in SQLite](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Tracks the usage metrics (voice minutes used, tokens consumed, dispatches sent) for billing client retainers.</li><li><strong>[leadGuard.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Holds database schema migrations for Stripe customer subscriptions and cards.</li></ul><p>Let's look at the database schema definition for billing in <code>leadGuard.ts</code>:</p><pre>CREATE TABLE IF NOT EXISTS invoice_ledger (\n  invoice_id TEXT PRIMARY KEY,\n  client_id TEXT NOT NULL,\n  amount REAL NOT NULL,\n  status TEXT DEFAULT 'paid',\n  voice_minutes REAL NOT NULL,\n  tokens_used INTEGER NOT NULL,\n  dispatches INTEGER NOT NULL,\n  created_at TEXT NOT NULL\n);</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>voice_minutes & tokens_used:</strong> By tracking the exact runtime duration of calls and the number of LLM tokens consumed by each client's agents, we can calculate and invoice clients if they exceed their monthly usage allowances.</li><li><strong>status:</strong> Defaults to 'paid' but can be updated via webhook integration from a billing processor like Stripe, enabling automatic subscription lockouts if a client's card fails.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Draft a B2B 1-page agreement for an emergency plumbing client using our streamlined template.</p><ul><li><strong>Step A:</strong> Open your word processor or text editor.</li><li><strong>Step B:</strong> Draft a simple proposal containing the following sections:</li><ul><li><strong>Scope:</strong> Implement 24/7 AI Voice Dispatch Agent, capture missed leads, sync with GCal.</li><li><strong>Investment:</strong> Setup Fee of $2,000 (One-Time) + Retainer of $1,500/month (Recurring).</li><li><strong>Terms:</strong> Retainer covers 500 call minutes/month. Excess minutes billed at $0.15/min.</li></ul><li><strong>Step C:</strong> Add a sign-off signature block at the bottom. This short document makes it easy for the client's decision-maker to approve and sign the contract on the spot.</li></ul>",
+  "quizzes": [
+    {
+      "question": "Why is a hybrid pricing model (Setup Fee + Retainer) preferred over a one-time build fee?",
+      "options": [
+        "Because it is required by the TypeScript compiler.",
+        "It establishes upfront commitment (Setup Fee) while securing long-term, recurring revenue (Retainer) for hosting, maintenance, and support.",
+        "Because Google Calendar does not support one-time transactions.",
+        "To save space on local SQLite database files."
+      ],
+      "answer": 1,
+      "explanation": "A setup fee offsets developer labor, while a retainer covers ongoing API costs and hosting. This ensures the agency is profitable during setup and builds recurring revenue."
+    },
+    {
+      "question": "What is the primary advantage of sending a short 1-page proposal over a long corporate agreement?",
+      "options": [
+        "It compiles faster on Vercel.",
+        "It reduces friction and confusion, allowing the decision-maker to review, approve, and sign the contract immediately.",
+        "It saves paper.",
+        "It is required by the Stripe API."
+      ],
+      "answer": 1,
+      "explanation": "Long agreements invite unnecessary legal reviews and delay decisions. A clear, 1-page proposal focused on scope, cost, and timeline accelerates the closing process."
+    },
+    {
+      "question": "Which database table is designed to track client system usage (e.g. call minutes and tokens used) for invoicing?",
+      "options": [
+        "knowledge_base",
+        "invoice_ledger",
+        "lead_registry",
+        "outbound_templates"
+      ],
+      "answer": 1,
+      "explanation": "The invoice_ledger table aggregates usage logs, listing totals for call duration, token consumption, and email dispatches to support accurate billing."
+    },
+    {
+      "question": "How do you handle client billing if they exceed their monthly call volume allowance?",
+      "options": [
+        "The system immediately shuts down and deletes the database.",
+        "We include an overage fee clause in the retainer agreement (e.g., $0.15 per additional call minute) and bill them for the excess usage.",
+        "We pay the API fees ourselves out of pocket.",
+        "We change the client's Google Calendar account."
+      ],
+      "answer": 1,
+      "explanation": "Including an overage rate in the contract protects the agency's margins if a client's campaign scales dramatically."
+    },
+    {
+      "question": "What is the primary goal of the setup fee charged at project onboarding?",
+      "options": [
+        "To buy server hardware.",
+        "To cover initial configuration labor (phone setup, database provisioning, prompt engineering) and establish client commitment.",
+        "To pay for the developer's Vercel membership.",
+        "To reset the SQLite database."
+      ],
+      "answer": 1,
+      "explanation": "The setup fee offsets the initial setup work, ensuring the agency is compensated for onboarding labor before recurring billing begins."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "title": "3.4 Reporting ROI, Analytics, & MBR Reviews",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>Clients do not cancel software retainers if they see clear, regular proof of value. If you don't report the results, the client will forget the pain they had before hiring you, start looking at the monthly charge on their bank statement, and cancel the service. To maintain high retention rates, you must conduct a **Monthly Business Review (MBR)**.</p><p>An MBR is a 15-minute presentation where you show the client their exact return on investment from the previous month. Instead of discussing technical upgrades, focus on these metrics:</p><ul><li><strong>Total Calls Captured:</strong> The number of calls that hit the bot when they were busy or after hours.</li><li><strong>Total Leads Qualified:</strong> The number of clean B2B/B2C leads passed to their sales team.</li><li><strong>Appointments Scheduled:</strong> How many dispatches or discovery calls were booked directly on their calendar.</li><li><strong>Recovered Revenue Pipeline:</strong> Calculating the potential sales value (Leads Captured * Average Transaction Value).</li><li><strong>Labor Hours Saved:</strong> The time their dispatchers saved by having the AI handle qualification and scheduling (e.g. 50 leads * 15 minutes/lead = 12.5 hours of manual work saved).</li></ul><h3>2. Code-Level & File Walkthrough</h3><p>To compile these reports, we run analytical queries against the SQLite database. The files involved in reporting data are:</p><ul><li><strong>[leadGuard.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Contains the database query helpers to count leads and summarize metrics.</li><li><strong>[dashboard.js](file:///Users/ashleybutler/ai-funnel-machine/public/dashboard.js):</strong> Aggregates and draws these metrics in visual charts for the client console.</li></ul><p>Let's look at the database aggregation query in <code>leadGuard.ts</code> (or similar database reports):</p><pre>SELECT \n  COUNT(*) as total_calls,\n  SUM(CASE WHEN scheduled_dispatch != '' THEN 1 ELSE 0 END) as total_bookings,\n  SUM(duration_seconds) as total_duration\nFROM call_logs\nWHERE client_id = ? AND started_at >= ?</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>COUNT(*):</strong> Counts the total number of calls handled by the AI agent for this client during the billing period.</li><li><strong>SUM(CASE WHEN scheduled_dispatch...):</strong> Evaluates how many call sessions resulted in a scheduled appointment on Google Calendar.</li><li><strong>SUM(duration_seconds):</strong> Aggregates the total call minutes consumed, which is used to calculate usage billing.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Run a mock analytics check on your database and review the aggregation queries in your codebase.</p><ul><li><strong>Step A:</strong> Open the database schema file: <code>/Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts</code>.</li><li><strong>Step B:</strong> Locate the <code>getAllRegisteredLeads</code> query on line 446. Notice how it filters records based on <code>client_id</code>.</li><li><strong>Step C:</strong> Review how call logs are tracked in SQLite.</li><li><strong>Step D:</strong> Run the verification script to confirm database read/write queries are functional:</li><pre>npx tsx verify_voice_settings.ts</pre></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary business reason for conducting Monthly Business Reviews (MBRs) with clients?",
+      "options": [
+        "To teach the client how to write TypeScript.",
+        "To present concrete proof of the system's ROI, ensuring high retention and preventing retainer cancellations.",
+        "To review Vercel deployment files.",
+        "To reset database configurations."
+      ],
+      "answer": 1,
+      "explanation": "Regularly demonstrating recovered revenue and saved labor hours makes the retainer cost feel trivial compared to the value delivered, keeping client churn low."
+    },
+    {
+      "question": "Which metric should you focus on when presenting an MBR report to a roofing contractor?",
+      "options": [
+        "The number of compiled files in the /dist folder.",
+        "The number of emergency inspections booked and the potential recovered revenue from those bookings.",
+        "The version number of the Google APIs library.",
+        "The type definition of the Zod schemas."
+      ],
+      "answer": 1,
+      "explanation": "Contractors care about sales and bookings. Highlighting the volume of appointments and the value of captured deals shows clear financial impact."
+    },
+    {
+      "question": "Which SQL function is used to calculate the total number of calls logged in the call_logs table?",
+      "options": [
+        "SUM(duration)",
+        "COUNT(*)",
+        "SELECT ALL",
+        "ADD(rows)"
+      ],
+      "answer": 1,
+      "explanation": "COUNT(*) is the standard relational database function used to return the total number of rows matching query conditions."
+    },
+    {
+      "question": "If an AI system captures 50 qualified leads in a month, and each lead takes 15 minutes of manual call time, how many dispatcher labor hours were saved?",
+      "options": [
+        "50 hours",
+        "25 hours",
+        "12.5 hours",
+        "2.5 hours"
+      ],
+      "answer": 2,
+      "explanation": "50 leads * 15 minutes = 750 minutes. Dividing by 60 minutes per hour: 750 / 60 = 12.5 hours."
+    },
+    {
+      "question": "In dashboard.js, where does the analytics panel retrieve its data from?",
+      "options": [
+        "From a flat config JSON file.",
+        "From local API endpoints that query the SQLite database.",
+        "Directly from the OpenAI developer console.",
+        "From the browser's cookies."
+      ],
+      "answer": 1,
+      "explanation": "The admin dashboard calls the server's API endpoints, which query the SQLite database to retrieve and return aggregated metrics."
+    }
+  ]
+}

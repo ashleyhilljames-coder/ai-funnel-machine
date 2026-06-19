@@ -1,0 +1,62 @@
+{
+  "title": "3.6 Crisis Operations & Emergency SOPs",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>No matter how stable your code is, third-party APIs will go down, servers will experience hardware failures, and cloud databases will occasionally disconnect. In a business automation environment, a 30-minute outage can result in missed emergencies, lost leads, and angry client phone calls. A crisis is not defined by the failure itself, but by **how you respond to the failure**.</p><p>To handle outages like an elite operations manager, you must establish **Emergency Standard Operating Procedures (SOPs)**:</p><ul><li><strong>Outage Detection:</strong> Running logging alerts that notify your team immediately when a server fails or when API request error rates spike.</li><li><strong>Client Communication:</strong> If a client's voice system is down, you must notify them *before* they notice. Send a reassuring email explaining that your monitoring systems caught the issue, we have activated backups, and their leads are safe in a recovery queue.</li><li><strong>Queue Recovery:</strong> Utilizing Pub/Sub message queues to hold all incoming leads during an outage, and processing them automatically once services are restored.</li></ul><h3>2. Code-Level & File Walkthrough</h3><p>Our background queue ensures that during a database or API outage, no messages are lost. The files responsible for error logging and recovery are:</p><ul><li><strong>[subscriber.ts](file:///Users/ashleybutler/ai-funnel-machine/src/subscriber.ts):</strong> Houses the try-catch block that nacks messages on failure.</li><li><strong>[server.ts](file:///Users/ashleybutler/ai-funnel-machine/src/server.ts):</strong> Logs server exceptions and handles 500 error code overrides.</li></ul><p>Let's look at the database backup and logging script snippet:</p><pre>import * as fs from 'fs';\nimport * as path from 'path';\n\nfunction backupDatabase() {\n  const source = path.join(process.cwd(), 'agentic_nexus.db');\n  const target = path.join(process.cwd(), `backups/db_backup_${Date.now()}.db`);\n  fs.copyFileSync(source, target);\n  console.log('📦 SQLite database backup created successfully.');\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>fs.copyFileSync:</strong> Since SQLite is a self-contained, single-file database, backing it up is extremely simple. We copy the file to a `backups/` directory, suffixing it with a timestamp. This allows us to restore our database to a healthy state in seconds if a file corruption event occurs.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Write an emergency client notification template and verify the database backup script commands.</p><ul><li><strong>Step A:</strong> Review the following outage communication email template:</li><pre>\"Hi [Client Name],\n\nOur system monitoring has detected a brief connection interruption between Twilio and our primary AI server. We have activated our backup routes, and our team is already working on the resolution.\n\nAll incoming leads are being held securely in our queue and will be processed immediately upon reconnect. No action is needed on your end.\n\nBest,\nAshley | Agentic Nexus Support\"</pre><li><strong>Step B:</strong> Open your terminal in the repository root and test the compilation of the TS server to ensure there are no build syntax errors:</li><pre>npm run build</pre><li><strong>Step C:</strong> The build compiles successfully. In a real server environment, you would schedule a daily cron job calling the backup script to copy `agentic_nexus.db` to a secure backup storage bucket.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary operational benefit of using a message queue (like GCP Pub/Sub) during a server outage?",
+      "options": [
+        "It automatically upgrades the Node.js version.",
+        "It holds incoming leads securely in the queue during the outage, preventing lead loss and processing them automatically when the server comes back online.",
+        "It translates SQL database queries to HTML pages.",
+        "It notifies Google Calendar of the error."
+      ],
+      "answer": 1,
+      "explanation": "A queue holds messages until a worker consumes them. If the server goes down, the queue stores incoming leads safely. Once restored, the worker picks up where it left off, avoiding lead loss."
+    },
+    {
+      "question": "If a client's AI agent goes offline, what is the best practice for client communication?",
+      "options": [
+        "Wait for the client to email you first, then deny the server is down.",
+        "Notify the client immediately with a reassuring explanation of the issue, active backups, and lead safety, building trust through proactive communication.",
+        "Shut down their account and delete the database.",
+        "Send them a zip file of the source code."
+      ],
+      "answer": 1,
+      "explanation": "Proactive communication builds customer trust. Notifying the client that you are already resolving the issue demonstrates professionalism and care."
+    },
+    {
+      "question": "Since SQLite is a self-contained file database, how do you perform a database backup?",
+      "options": [
+        "By copying the SQLite database file (agentic_nexus.db) to a separate backup directory.",
+        "By exporting the database to a text file and printing it.",
+        "By deleting all rows in the lead_registry table.",
+        "SQLite does not support database backups."
+      ],
+      "answer": 0,
+      "explanation": "SQLite databases are single files. Backing up is as simple as copying the `agentic_nexus.db` binary file to another folder or cloud bucket."
+    },
+    {
+      "question": "Which HTTP status code should be returned if a server encounters an unhandled internal exception during lead processing?",
+      "options": [
+        "200 OK",
+        "301 Moved Permanently",
+        "400 Bad Request",
+        "500 Internal Server Error"
+      ],
+      "answer": 3,
+      "explanation": "HTTP 500 signals that the server encountered a critical error, allowing client applications to log the failure and retry."
+    },
+    {
+      "question": "What happens to a message in our subscriber loop if the background handler crashes and the code executes message.nack()?",
+      "options": [
+        "It is permanently deleted.",
+        "It is put back in the Pub/Sub queue to be retried after a backoff period, ensuring system resilience.",
+        "It is sent to a random customer's email.",
+        "It is converted into a PDF invoice."
+      ],
+      "answer": 1,
+      "explanation": "Nacking preserves the message in the queue. Google Cloud will attempt delivery again, allowing the system to retry once the crash is resolved."
+    }
+  ]
+}

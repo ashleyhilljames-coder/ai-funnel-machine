@@ -1,0 +1,62 @@
+{
+  "title": "2.6 Enterprise Objection Handling",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>When selling high-ticket retainers to larger companies (enterprise clients), you will face sophisticated objections. Local contractors worry about cost, but enterprises worry about **risk, reliability, and security**. If you cannot answer these objections, you will lose the contract.</p><p>Here are the three most common enterprise objections and how to handle them:</p><ul><li><strong>1. Security & Data Privacy:</strong> <em>'Where does our customer data go? Is it sold to train AI models?'</em><br><strong>Solution:</strong> We host your data in secure, sandboxed databases (SQLite/PostgreSQL) on private cloud infrastructure (GCP/AWS). We use enterprise-tier APIs (OpenAI/Anthropic) with strict data privacy terms: <strong>none of the customer conversations or data are ever used to train public models</strong>.</li><li><strong>2. Hallucinations & Price Quoting:</strong> <em>'What if the bot makes up false promises or quotes a low price?'</em><br><strong>Solution:</strong> The bot is strictly restricted. We use <strong>Retrieval-Augmented Generation (RAG)</strong>, which limits the bot's knowledge to verified documents. We instruct the model using strict system prompts: the bot **cannot** negotiate prices, formulate custom agreements, or quote rates. It is designed to capture information and book appointments only.</li><li><strong>3. Build vs. Buy:</strong> <em>'Why don't we just hire a developer to build this in-house?'</em><br><strong>Solution:</strong> Building is cheap, but maintenance is expensive. AI APIs change weekly. Managing realtime WebSocket connections, database deduplication, and Google APIs requires dedicated engineers. In-house development will cost over $100,000 in salaries, whereas our retainer provides a fully managed, battle-tested system instantly.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Configure a RAG prompt safeguard to prevent price hallucinations and test its enforcement.</p><ul><li><strong>Step A:</strong> Review the system instruction logic inside the RAG retrieval service: <code>/Users/ashleybutler/ai-funnel-machine/src/services/ragService.ts</code> (if configured).</li><li><strong>Step B:</strong> Draft a strict system prompt safeguard block:</li><pre>\"If the user asks about pricing, estimates, or quotes, you MUST reply: 'I don't have access to pricing. Our estimator will discuss rates during your scheduled call.' Do NOT make up any numbers.\"</pre><li><strong>Step C:</strong> To test this rule, you would insert this snippet into your voice agent's custom instructions inside SQLite, dial your prototype Twilio number, and try to force the bot to give you a price. Verify the bot politely declines, enforcing your safety gate.</li></ul>",
+  "quizzes": [
+    {
+      "question": "How do we handle the enterprise data privacy objection regarding model training?",
+      "options": [
+        "We tell them we do not use any third-party APIs.",
+        "We explain that we use enterprise-tier API agreements where customer conversation inputs are legally protected and never used to train public AI models.",
+        "We host the AI model directly inside a local text file.",
+        "We ignore the question and move to pricing."
+      ],
+      "answer": 1,
+      "explanation": "OpenAI and Anthropic developer API agreements guarantee that data sent via APIs is not used to train public models, addressing corporate data compliance concerns."
+    },
+    {
+      "question": "What technology is used to restrict the AI agent's knowledge to verified business documents, preventing hallucinations?",
+      "options": [
+        "TypeScript compiler configurations",
+        "Retrieval-Augmented Generation (RAG) and strict system-level prompt constraints",
+        "Express middleware routing",
+        "OAuth 2.0 authorization redirects"
+      ],
+      "answer": 1,
+      "explanation": "RAG retrieves relevant facts from a private database and feeds them to the LLM, restricting its context window to verified information."
+    },
+    {
+      "question": "What is the primary counter-argument to the 'Build vs. Buy' objection from enterprise clients?",
+      "options": [
+        "That our software is open source.",
+        "That hiring developers and maintaining complex real-time WebSocket infrastructures costs over $100k/year, making our managed retainer far more cost-effective.",
+        "That SQLite database files are free.",
+        "That Vercel hosting is easier than Google Cloud."
+      ],
+      "answer": 1,
+      "explanation": "Emphasizing maintenance overhead, continuous API updates, and engineering salary expenses makes a managed monthly retainer look highly economical."
+    },
+    {
+      "question": "Why must the AI voice agent be explicitly blocked from quoting service prices?",
+      "options": [
+        "Because it is illegal for AI to discuss money.",
+        "To prevent hallucinations that could commit the business to unprofitable pricing agreements.",
+        "To save space on Google Sheets.",
+        "Because Twilio does not support currency symbols."
+      ],
+      "answer": 1,
+      "explanation": "AI models lack real-time context on site-specific damages. Allowing them to quote prices risks committing the client to unprofitable contracts."
+    },
+    {
+      "question": "Under what condition does the RAG system retrieve information from the client's knowledge base?",
+      "options": [
+        "When the server starts up.",
+        "When a user asks a question, using semantic similarity search to locate the most relevant document chunks.",
+        "Only when the database is empty.",
+        "When a new Docker image is built."
+      ],
+      "answer": 1,
+      "explanation": "RAG runs at query time. It converts the user's question into an embedding, finds matching chunks in SQLite, and adds them to the LLM prompt."
+    }
+  ]
+}

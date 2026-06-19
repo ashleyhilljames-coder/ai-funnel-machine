@@ -1,0 +1,62 @@
+{
+  "title": "2.3 Hyper-Personalized Outbound Campaigns",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>Standard B2B email marketing is dead. Business owners receive dozens of automated sales emails every day. If they open an email and see a block of marketing text, fake compliments ('I love your website!'), or hyped pitches ('We can grow your business by 10x!'), they will delete it immediately or mark it as spam.</p><p>To get a <strong>30%+ response rate</strong>, we use <strong>Hyper-Personalized Outreach</strong> built around the **Four-Sentence Rule**:</p><ul><li><strong>Casual, Peer-to-Peer Tone:</strong> Write as if you are emailing a friend or colleague from your personal inbox. No fancy formatting, graphics, or HTML layouts.</li><li><strong>Strict Length Cap:</strong> Keep the email under 4 sentences. Business owners are busy; if they can read the entire email on their phone screen in 5 seconds, they are much more likely to reply.</li><li><strong>Laser-Focused Pain Point:</strong> Focus on one specific operational headache (e.g. for roofers: 'If a storm hits and you miss a call, that customer calls the next contractor on the list').</li><li><strong>Low-Friction Call-to-Action (CTA):</strong> Do not ask for a 30-minute meeting right away. Ask a simple, open-ended question that is easy to reply to (e.g., 'Are you guys using any tools to capture leak details after hours?').</li></ul><p>By passing the prospect's industry and name to a lightweight AI model (like <code>gpt-4o-mini</code>), the system generates customized copy for each business dynamically and dispatches it immediately using the **Resend API**.</p><h3>2. Code-Level & File Walkthrough</h3><p>Outbound copywriting and email dispatching are managed in **[outboundSequence.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/sequences/outboundSequence.ts)**. Let's look at how the campaign email copy is generated:</p><pre>const completion = await openai.chat.completions.create({\n  model: 'gpt-4o-mini',\n  messages: [\n    { role: 'system', content: systemPrompt },\n    { role: 'user', content: userPrompt }\n  ],\n  temperature: 0.7,\n});\n\nconst emailBodyText = completion.choices[0].message?.content?.trim();\nconst body = `Hi ${prospect.contactName},\\n\\n${emailBodyText}\\n\\nBest,\\n\\nAshley | Agentic Nexus`;</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-8:</strong> The code triggers an OpenAI Chat Completion request. It uses the cost-effective and low-latency <code>gpt-4o-mini</code> model. We set the system instructions to enforce our strict copywriting rules (e.g., Casual tone, under 4 sentences, no marketing hype).</li><li><strong>Line 10:</strong> We extract and trim the generated text content from the API response payload.</li><li><strong>Line 11:</strong> We wrap the AI-generated text inside a casual personal email template, appending a simple greeting and sign-off block. This text is then passed to the Resend SDK: <code>resend.emails.send(...)</code>.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Verify that your environment contains the necessary keys and execute an outbound run to view the AI-generated copy.</p><ul><li><strong>Step A:</strong> Check that your <code>.env</code> file contains valid credentials for <code>OPENAI_API_KEY</code> and <code>RESEND_API_KEY</code>.</li><li><strong>Step B:</strong> If you are testing, you can write a mock lead list in <code>intake/leads_test.csv</code> with your own personal email.</li><li><strong>Step C:</strong> Open your terminal in the root directory and run the outbound CLI script:</li><pre>npx tsx run-outbound.ts --client=default_client</pre><li><strong>Step D:</strong> Inspect the console output. Verify that the logs print out the specific prospect's name, show that the AI completed the copy generation successfully, and log the tracking ID of the email sent. Check your inbox to view the completed email!</li></ul>",
+  "quizzes": [
+    {
+      "question": "What does the Four-Sentence Rule in B2B outbound copywriting suggest?",
+      "options": [
+        "That all emails must be translated into four different languages.",
+        "That outreach emails should be casual, hype-free, focused on a specific pain point, and short enough to read in 5 seconds to increase response rates.",
+        "That you must wait four days between sending emails.",
+        "That the database needs to store four identical copies of every record."
+      ],
+      "answer": 1,
+      "explanation": "Short, direct, and conversational emails feel personal rather than automated. Keeping it under 4 sentences respects the prospect's time and increases response rates."
+    },
+    {
+      "question": "Which OpenAI model is used by the OutboundSequenceManager for generating custom outreach copy?",
+      "options": [
+        "gpt-4-turbo",
+        "gpt-4o-mini",
+        "text-davinci-003",
+        "dall-e-3"
+      ],
+      "answer": 1,
+      "explanation": "gpt-4o-mini is highly cost-effective, fast, and highly capable of structured copywriting tasks, making it ideal for high-volume personalized outreach."
+    },
+    {
+      "question": "What is the role of the Resend client in our outbound automation pipeline?",
+      "options": [
+        "It acts as a relational database to store records.",
+        "It handles the API dispatch and delivery of the generated personal emails to prospect mailboxes.",
+        "It compiles the TypeScript files into JavaScript.",
+        "It hosts the WebSocket voice server."
+      ],
+      "answer": 1,
+      "explanation": "Resend is an email delivery API for developers. The OutboundSequenceManager calls the Resend SDK to dispatch emails to the recipient."
+    },
+    {
+      "question": "Why is a low-friction CTA (like asking a simple open-ended question) preferred over a direct meeting link?",
+      "options": [
+        "Because meeting links are blocked by search engines.",
+        "Because it requires less commitment from the prospect, lowering the barrier to reply and starting a conversation naturally.",
+        "Because it saves token costs on OpenAI.",
+        "Because it is required by the SQLite database."
+      ],
+      "answer": 1,
+      "explanation": "Asking for a meeting on the first contact feels demanding. Starting with a low-friction question makes it easy for the prospect to reply, establishing dialogue."
+    },
+    {
+      "question": "What fallback copy is used if the OpenAI API fails during email copy generation?",
+      "options": [
+        "The system crashes and throws a 500 error.",
+        "A baseline general outreach sentence asking about intake systems and automation.",
+        "It sends an empty email.",
+        "It skips the lead entirely."
+      ],
+      "answer": 1,
+      "explanation": "To ensure operations don't halt during external API downtime, the catch block falls back to a clean baseline outreach message and completes the email delivery."
+    }
+  ]
+}

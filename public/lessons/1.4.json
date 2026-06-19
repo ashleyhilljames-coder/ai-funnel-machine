@@ -1,0 +1,62 @@
+{
+  "title": "1.4 Multi-Tenant Google Calendar Booking",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>To schedule discovery calls or book contractor dispatches automatically, the AI Funnel Machine must integrate with Google Calendar. Standard apps do this using <strong>OAuth 2.0 Auth Flows</strong> (which show a screen saying 'Sign in with Google' and prompt the user for permission). While OAuth is fine for consumer apps, it is terrible for background agents. If the authentication token expires while the background process is running, the agent will crash because there is no human present to re-enter their username and password.</p><p>To solve this, we use a <strong>GCP Service Account</strong>. Think of a Service Account as a special robotic user that has its own email (e.g., <code>calendar-bot@...gserviceaccount.com</code>) and a private key file (<code>gcp-key.json</code>). Instead of logging in with a password, our server logs in using this file. To give the bot access to a user's calendar, the user simply shares their Google Calendar settings with the bot's email address and grants it **'Make changes to events'** permissions.</p><p><strong>Multi-Tenancy</strong> means our single application serves multiple clients (tenants). Each client has their own calendar. By querying SQLite, our system fetches each tenant's specific <code>googleCalendarId</code> and instructs our Service Account to book appointments directly onto their distinct calendar, separating client bookings completely.</p><h3>2. Code-Level & File Walkthrough</h3><p>The calendar scheduling system is defined across two files:</p><ul><li><strong>[calendarService.ts](file:///Users/ashleybutler/ai-funnel-machine/src/services/calendarService.ts):</strong> Sets up Google API credentials and filters busy slots.</li><li><strong>[calendar-booker.ts](file:///Users/ashleybutler/ai-funnel-machine/src/agents/calendar-booker.ts):</strong> Calculates appointment times and executes the calendar insert request.</li></ul><p>Let's look at the calendar client authorization in <code>calendarService.ts</code>:</p><pre>async function getCalendarClient() {\n  const keyPath = path.join(process.cwd(), 'gcp-key.json');\n  if (!fs.existsSync(keyPath)) {\n    throw new Error('gcp-key.json missing');\n  }\n  const auth = new google.auth.GoogleAuth({\n    keyFile: keyPath,\n    scopes: ['https://www.googleapis.com/auth/calendar.events'],\n  });\n  const authClient = await auth.getClient();\n  return google.calendar({ version: 'v3', auth: authClient as any });\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-4:</strong> We check if the service account credential file <code>gcp-key.json</code> exists in the project root. If missing, we throw an error early.</li><li><strong>Lines 5-8:</strong> We instantiate GoogleAuth, passing the credentials file and the narrowest scope required: `https://www.googleapis.com/auth/calendar.events` (which allows creating and deleting events but does not grant full admin rights to the Google Account).</li><li><strong>Lines 9-10:</strong> We fetch the client credentials wrapper and initialize the Google Calendar API Client (v3) using this authenticated wrapper.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Modify the meeting length and verify that calendar invitations are generated with the updated timing parameters.</p><ul><li><strong>Step A:</strong> Navigate to the file: <code>/Users/ashleybutler/ai-funnel-machine/src/agents/calendar-booker.ts</code>.</li><li><strong>Step B:</strong> Locate the <code>DISCOVERY_CALL_DURATION_MINUTES</code> variable on line 15. Check that it is set to <code>45</code>.</li><li><strong>Step C:</strong> Open your terminal in the repository root and run: <code>npm run test:lead</code>.</li><li><strong>Step D:</strong> If the calendar booking runs successfully, verify in the console logs that the booking starts at a specific time and ends exactly 45 minutes later. If it fails with 'gcp-key.json missing', ensure you have downloaded your Google Cloud service account key and placed it in the project root folder.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary difference between a Google Service Account and a standard Google OAuth login?",
+      "options": [
+        "Service Accounts require user redirection to a browser login window every 24 hours.",
+        "Service Accounts use a private key file (gcp-key.json) for programmatic, background auth without requiring interactive user logins.",
+        "Service Accounts are only compatible with HTML pages and cannot connect to Express.",
+        "Service Accounts do not support Google Calendar interactions."
+      ],
+      "answer": 1,
+      "explanation": "Service Accounts are designed for secure server-to-server automations. They authenticate programmatically using a credentials key file, making them perfect for background agents that run without user interaction."
+    },
+    {
+      "question": "Which permission level must a client grant when sharing their personal Google Calendar with a Service Account bot?",
+      "options": [
+        "See only free/busy (hide details)",
+        "Make changes to events",
+        "Delete entire calendar settings",
+        "No permissions are needed; the bot bypasses security automatically"
+      ],
+      "answer": 1,
+      "explanation": "To allow the service account to insert and schedule events, the calendar owner must share their calendar with the bot's email address and select the 'Make changes to events' permission level."
+    },
+    {
+      "question": "What is the narrowest Google API OAuth scope required to create, update, and list calendar events?",
+      "options": [
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/gmail.send"
+      ],
+      "answer": 1,
+      "explanation": "Using 'calendar.events' conforms to the principle of least privilege, providing access only to create and edit calendar events without access to settings or metadata."
+    },
+    {
+      "question": "How does the getAvailableSlots function prevent double-booking appointments?",
+      "options": [
+        "It asks the user to manually review the calendar first.",
+        "It fetches the list of existing events from the target Google Calendar and filters out any candidate slots that overlap.",
+        "It locks the SQLite database during booking.",
+        "It deletes all old calendar events."
+      ],
+      "answer": 1,
+      "explanation": "The function queries list events within a time range, then uses a comparison check to filter out slots where the candidate slot overlaps with an existing appointment."
+    },
+    {
+      "question": "Where does the multi-tenant calendar service look up client-specific calendar IDs?",
+      "options": [
+        "From the browser's cookies.",
+        "From the client settings record inside the LeadGuard SQLite database.",
+        "In a public GitHub repository config.",
+        "Inside the package.json dependency array."
+      ],
+      "answer": 1,
+      "explanation": "In multi-tenant setups, client configurations (including Google Calendar IDs) are stored in the database. LeadGuard reads from the SQLite client table to resolve the calendar ID dynamically."
+    }
+  ]
+}

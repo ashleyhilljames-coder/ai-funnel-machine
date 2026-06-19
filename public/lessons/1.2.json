@@ -1,0 +1,62 @@
+{
+  "title": "1.2 Ingestion & Lead Validation (Express + Zod)",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>When leads submit information on a web form, the data is sent to the backend as a raw JSON payload. We cannot trust this data. Hackers might send SQL injection payloads, or regular users might forget to enter their name or write a typo in their email address.</p><p>If we pass bad data (like a missing email address) to downstream APIs like Google Calendar or email responders, the entire system crashes or throws unhandled errors. Validation is the process of checking the data at the entryway to make sure it matches our format exactly.</p><p><strong>Zod</strong> is a TypeScript-first schema validation library. Instead of writing custom complex <code>if</code> statements for every single field, we define a schema (a template) showing exactly what we expect. Zod then checks the payload against the schema. If it fails, it gives us a list of exact errors. If it passes, it returns clean, fully typed data that we can safely use.</p><h3>2. Code-Level & File Walkthrough</h3><p>The lead ingestion flow is managed across three files:</p><ul><li><strong>[lead.ts](file:///Users/ashleybutler/ai-funnel-machine/src/lead.ts):</strong> Declares the schema structure.</li><li><strong>[ingest.ts](file:///Users/ashleybutler/ai-funnel-machine/src/ingest.ts):</strong> Generates metadata (UUID and date) and parses the incoming lead against the schema.</li><li><strong>[server.ts](file:///Users/ashleybutler/ai-funnel-machine/src/server.ts):</strong> Exposes the Express endpoint and catches error types under strict compiling settings.</li></ul><p>Let's look at the Express router endpoint in <code>server.ts</code>:</p><pre>app.post('/api/leads', async (req, res) => {\n  try {\n    const { messageId, lead } = await ingestLead(req.body);\n    res.status(202).json({\n      success: true,\n      messageId,\n      leadId: lead.id,\n      createdAt: lead.createdAt,\n    });\n  } catch (error) {\n    if (error instanceof ZodError) {\n      console.warn('⚠️ Incoming lead validation failed:', error.issues);\n      res.status(400).json({\n        success: false,\n        error: 'Validation failed',\n        details: error.issues.map((err: ZodIssue) => ({\n          field: err.path.join('.'),\n          message: err.message,\n        })),\n      });\n      return;\n    }\n    // generic 500 error...\n  }\n});</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-5:</strong> We call <code>ingestLead</code> passing <code>req.body</code>. If validation succeeds, it generates a message in GCP Pub/Sub and returns a <code>202 Accepted</code> response to the frontend.</li><li><strong>Lines 6-7:</strong> If an error is thrown, we check if it is an instance of Zod's <code>ZodError</code>.</li><li><strong>Lines 8-15:</strong> We return a <code>400 Bad Request</code> and map over <code>error.issues</code> (typing each item as <code>ZodIssue</code> to comply with strict tsconfig rules) to create an array of user-friendly field-level error messages.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Test that the validation engine correctly blocks invalid lead submissions and gives clear error feedback.</p><ul><li><strong>Step A:</strong> Ensure your local dev server is running by opening a terminal in <code>/Users/ashleybutler/ai-funnel-machine</code> and executing: <code>npm run dev</code>.</li><li><strong>Step B:</strong> Open a second terminal window (or tab) and run the following curl command which sends a lead payload missing the required <code>firstName</code> and containing a bad email structure:</li><pre>curl -X POST http://localhost:3000/api/leads \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"invalid-email\", \"lastName\": \"Doe\", \"source\": \"google\", \"funnelStep\": \"opt-in\"}'</pre><li><strong>Step C:</strong> Verify that the server responds with a <code>400 Bad Request</code> status and returns a JSON payload detailing the validation errors for the email and the missing first name.</li><li><strong>Step D:</strong> Send a corrected, valid curl request and verify you receive a <code>202 Accepted</code> response.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary function of Zod's schema.parse() method?",
+      "options": [
+        "It connects the application to a PostgreSQL database.",
+        "It compiles TypeScript files to JavaScript in real-time.",
+        "It parses input data, verifying it against the schema rules, and throws a ZodError if any fields are invalid.",
+        "It sends an email notification to the customer service department."
+      ],
+      "answer": 2,
+      "explanation": "schema.parse() evaluates the input data. If the data is valid, it returns the parsed object; if not, it immediately throws a ZodError containing field-level issues."
+    },
+    {
+      "question": "Why is it important to capture ZodError specifically in the catch block of /api/leads?",
+      "options": [
+        "Because only ZodError can be written to SQLite databases.",
+        "To allow us to distinguish between user input validation failures (400 Bad Request) and backend server crashes (500 Internal Error).",
+        "It automatically re-routes the user request to Google Calendar.",
+        "To encrypt the response message."
+      ],
+      "answer": 1,
+      "explanation": "If there's an LLM connection crash, that is a server problem (500). If the user forgot their email, that is an input problem (400). Catching ZodError specifically allows us to handle input errors separately and return clean feedback."
+    },
+    {
+      "question": "Which field in the Zod schema checks for valid email formatting (like presence of @ and domain)?",
+      "options": [
+        "z.string().min(1)",
+        "z.string().email()",
+        "z.string().regex()",
+        "z.string().datetime()"
+      ],
+      "answer": 1,
+      "explanation": "Zod has a built-in helper method `.email()` which automatically validates that the string conforms to standard email format rules."
+    },
+    {
+      "question": "Under strict TypeScript configurations, why must we explicitly type variables mapped from error.issues?",
+      "options": [
+        "To prevent implicit 'any' compiler errors, ensuring type safety when referencing ZodIssue fields.",
+        "To compile the application into a Docker container.",
+        "To save memory on the Vercel hosting platform.",
+        "To establish connection threads with Twilio APIs."
+      ],
+      "answer": 0,
+      "explanation": "Strict compiler rules (like noImplicitAny) require mapping callback parameters to be typed (e.g., mapping error issues to ZodIssue) so that their nested fields are fully type-checked."
+    },
+    {
+      "question": "Which of the following JSON payloads will successfully pass the LeadSchema validation?",
+      "options": [
+        "{\"email\": \"a@b.com\", \"firstName\": \"Jane\", \"lastName\": \"\", \"source\": \"ads\"}",
+        "{\"email\": \"jane@example.com\", \"firstName\": \"Jane\", \"lastName\": \"Doe\", \"source\": \"google\", \"funnelStep\": \"opt-in\"}",
+        "{\"email\": \"jane\", \"firstName\": \"Jane\", \"lastName\": \"Doe\", \"source\": \"google\", \"funnelStep\": \"opt-in\"}",
+        "{\"firstName\": \"Jane\", \"lastName\": \"Doe\", \"source\": \"google\", \"funnelStep\": \"opt-in\"}"
+      ],
+      "answer": 1,
+      "explanation": "Option B contains all required fields with valid formats (a valid email, non-empty strings for first name, last name, source, and funnel step)."
+    }
+  ]
+}

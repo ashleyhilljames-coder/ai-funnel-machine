@@ -496,14 +496,12 @@
       <!-- Quiz Card -->
       <section class="content-card quiz-card" id="quiz-section">
         <h3>❓ Quiz & Knowledge Check</h3>
-        <p id="quiz-question">Question text...</p>
-        <div class="options-list" id="quiz-options-container">
+        <div id="quiz-questions-container">
           <!-- Populated dynamically -->
         </div>
-
-        <div class="feedback-box" id="quiz-feedback-box">
-          <h4 id="feedback-title">Result</h4>
-          <p id="feedback-text">Explanation text...</p>
+        <div class="quiz-score-container" id="quiz-score-container" style="display: none; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 600; font-size: 16px;">Cumulative Score:</span>
+          <span id="quiz-score-display" style="font-weight: 700; font-size: 18px; color: var(--accent-purple);">0 / 5 Correct</span>
         </div>
       </section>
 
@@ -568,17 +566,10 @@
       document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
       renderSidebar(); // Redraws and highlights correctly
       
-      const lesson = LESSONS_CONTENT[id];
-      if (!lesson) return;
-
-      // Map module title
-      let moduleNum = id.split('.')[0];
-      document.getElementById('current-module-title').innerText = `MODULE ${moduleNum}`;
-      document.getElementById('current-lesson-title').innerText = lesson.title;
-
       // Load Lecture & Exercise
-      document.getElementById('lecture-text').innerHTML = lesson.lecture;
-      document.getElementById('exercise-text').innerHTML = lesson.exercise;
+      document.getElementById('lecture-text').innerHTML = '<p>Loading lesson content...</p>';
+      document.getElementById('exercise-text').innerHTML = '<p>Loading exercise content...</p>';
+      document.getElementById('quiz-section').style.display = 'none';
 
       // Load Button states
       const completeBtn = document.getElementById('mark-complete-btn');
@@ -595,35 +586,129 @@
         completeText.innerText = 'Mark Completed';
       }
 
-      // Load Quiz
-      const quiz = lesson.quiz;
-      if (quiz) {
-        document.getElementById('quiz-section').style.display = 'block';
-        document.getElementById('quiz-question').innerText = quiz.question;
-        const optionsContainer = document.getElementById('quiz-options-container');
-        optionsContainer.innerHTML = '';
-        document.getElementById('quiz-feedback-box').style.display = 'none';
+      fetch(`/lessons/${id}.json`)
+        .then(response => {
+          if (!response.ok) throw new Error('Lesson not found');
+          return response.json();
+        })
+        .then(lesson => {
+          // Map module title
+          let moduleNum = id.split('.')[0];
+          document.getElementById('current-module-title').innerText = `MODULE ${moduleNum}`;
+          document.getElementById('current-lesson-title').innerText = lesson.title;
 
-        const letterBadges = ['A', 'B', 'C', 'D'];
-        quiz.options.forEach((option, index) => {
-          const btn = document.createElement('button');
-          btn.className = 'option-button';
-          btn.onclick = () => checkAnswer(index, btn);
+          // Load Lecture & Exercise
+          document.getElementById('lecture-text').innerHTML = lesson.lecture;
+          document.getElementById('exercise-text').innerHTML = lesson.exercise;
 
-          const badge = document.createElement('span');
-          badge.className = 'option-badge';
-          badge.innerText = letterBadges[index];
-          btn.appendChild(badge);
-
-          const text = document.createElement('span');
-          text.innerText = option;
-          btn.appendChild(text);
-
-          optionsContainer.appendChild(btn);
+          // Load Quizzes
+          const quizzes = lesson.quizzes;
+          const quizContainer = document.getElementById('quiz-questions-container');
+          const scoreContainer = document.getElementById('quiz-score-container');
+          const scoreDisplay = document.getElementById('quiz-score-display');
+          
+          quizContainer.innerHTML = '';
+          
+          if (quizzes && quizzes.length > 0) {
+            document.getElementById('quiz-section').style.display = 'block';
+            scoreContainer.style.display = 'flex';
+            
+            let answersState = Array(quizzes.length).fill(null); // records selected answer indices
+            let isCorrectState = Array(quizzes.length).fill(false); // records if correct
+            
+            function updateScore() {
+              let answeredCount = answersState.filter(a => a !== null).length;
+              let correctCount = isCorrectState.filter(c => c === true).length;
+              scoreDisplay.innerText = `${correctCount} / ${quizzes.length} Correct${answeredCount === quizzes.length ? ' (Completed)' : ''}`;
+            }
+            
+            updateScore();
+            
+            quizzes.forEach((quiz, qIndex) => {
+              const qWrapper = document.createElement('div');
+              qWrapper.style.marginBottom = '32px';
+              qWrapper.style.paddingBottom = '24px';
+              if (qIndex < quizzes.length - 1) {
+                qWrapper.style.borderBottom = '1px dashed var(--border-color)';
+              }
+              
+              const qTitle = document.createElement('p');
+              qTitle.style.fontWeight = '600';
+              qTitle.style.marginBottom = '12px';
+              qTitle.style.fontSize = '15px';
+              qTitle.innerHTML = `<strong>Q${qIndex + 1}:</strong> ${quiz.question}`;
+              qWrapper.appendChild(qTitle);
+              
+              const optsList = document.createElement('div');
+              optsList.className = 'options-list';
+              optsList.style.marginTop = '12px';
+              
+              const letterBadges = ['A', 'B', 'C', 'D', 'E'];
+              const optButtons = [];
+              
+              const feedbackBox = document.createElement('div');
+              feedbackBox.className = 'feedback-box';
+              feedbackBox.style.marginTop = '16px';
+              
+              const feedbackTitle = document.createElement('h4');
+              const feedbackText = document.createElement('p');
+              feedbackBox.appendChild(feedbackTitle);
+              feedbackBox.appendChild(feedbackText);
+              
+              quiz.options.forEach((option, oIndex) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-button';
+                
+                const badge = document.createElement('span');
+                badge.className = 'option-badge';
+                btn.appendChild(badge);
+                badge.innerText = letterBadges[oIndex];
+                
+                const txt = document.createElement('span');
+                txt.innerText = option;
+                btn.appendChild(txt);
+                
+                btn.onclick = () => {
+                  // Lock other options
+                  optButtons.forEach(b => b.onclick = null);
+                  
+                  answersState[qIndex] = oIndex;
+                  if (oIndex === quiz.answer) {
+                    btn.classList.add('correct');
+                    feedbackTitle.innerText = '✅ Correct!';
+                    feedbackTitle.style.color = 'var(--accent-green)';
+                    isCorrectState[qIndex] = true;
+                  } else {
+                    btn.classList.add('incorrect');
+                    optButtons[quiz.answer].classList.add('correct');
+                    feedbackTitle.innerText = '❌ Incorrect';
+                    feedbackTitle.style.color = 'var(--accent-red)';
+                    isCorrectState[qIndex] = false;
+                  }
+                  
+                  feedbackText.innerHTML = quiz.explanation;
+                  feedbackBox.style.display = 'block';
+                  updateScore();
+                };
+                
+                optButtons.push(btn);
+                optsList.appendChild(btn);
+              });
+              
+              qWrapper.appendChild(optsList);
+              qWrapper.appendChild(feedbackBox);
+              quizContainer.appendChild(qWrapper);
+            });
+          } else {
+            document.getElementById('quiz-section').style.display = 'none';
+            scoreContainer.style.display = 'none';
+          }
+        })
+        .catch(err => {
+          console.error('Error loading lesson:', err);
+          document.getElementById('lecture-text').innerHTML = `<p style="color: var(--accent-red); padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: rgba(239, 68, 68, 0.05);">Error loading lesson details: ${err.message}</p>`;
+          document.getElementById('exercise-text').innerHTML = `<p>Failed to retrieve the practical guidelines for this chapter.</p>`;
         });
-      } else {
-        document.getElementById('quiz-section').style.display = 'none';
-      }
     }
 
     // Toggle lesson completion state
@@ -651,38 +736,9 @@
       document.getElementById('progress-bar').style.width = `${percent}%`;
     }
 
-    // Evaluate quiz selection
-    function checkAnswer(selectedIndex, selectedBtn) {
-      const lesson = LESSONS_CONTENT[activeLessonId];
-      if (!lesson || !lesson.quiz) return;
-
-      const quiz = lesson.quiz;
-      const buttons = document.querySelectorAll('.option-button');
-      
-      // Disable further clicks
-      buttons.forEach(btn => btn.onclick = null);
-
-      const feedbackBox = document.getElementById('quiz-feedback-box');
-      const feedbackTitle = document.getElementById('feedback-title');
-      const feedbackText = document.getElementById('feedback-text');
-
-      if (selectedIndex === quiz.answer) {
-        selectedBtn.classList.add('correct');
-        feedbackTitle.innerText = '✅ Correct!';
-        feedbackTitle.style.color = 'var(--accent-green)';
-      } else {
-        selectedBtn.classList.add('incorrect');
-        buttons[quiz.answer].classList.add('correct');
-        feedbackTitle.innerText = '❌ Incorrect';
-        feedbackTitle.style.color = 'var(--accent-red)';
-      }
-
-      feedbackText.innerHTML = quiz.explanation;
-      feedbackBox.style.display = 'block';
-    }
-
     // Load initial state
     window.onload = init;
   </script>
 </body>
 </html>
+

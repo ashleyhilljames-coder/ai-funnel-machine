@@ -1,0 +1,62 @@
+{
+  "title": "1.6 Tenant Guards & Deduplication System",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>Email deliverability is a fragile asset. If an automated system sends multiple emails to the same recipient in a short window of time, the recipient will get annoyed, mark the email as spam, and domain regulators will blacklist the client's email domain. If that domain is blacklisted, 100% of all future emails go straight to the spam folder, ruining the business outreach system.</p><p>To protect our clients, we must enforce <strong>Deduplication Gates</strong> at two different levels:</p><ul><li><strong>Tenant-Level Deduplication:</strong> Restricts outreach so a specific client (tenant) cannot contact the same prospect email multiple times, even if that email appears in different CSV lists they upload.</li><li><strong>Global Block List (Opt-Out):</strong> If a prospect clicks 'unsubscribe' or asks to be removed, we flag them with a <code>global_block = 1</code> in our central database. This blocks **all** clients in our system from emailing them, protecting the entire system from compliance violations (like CAN-SPAM laws).</li></ul><p>By saving this record in a relational database with strict constraints, we check and intercept duplicates at the speed of milliseconds before any code calls external email delivery APIs.</p><h3>2. Code-Level & File Walkthrough</h3><p>The deduplication logic is managed in <strong>[leadGuard.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts)</strong>. Let's look at the database setup and queries:</p><pre>CREATE TABLE IF NOT EXISTS lead_registry (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  email TEXT NOT NULL,\n  client_id TEXT NOT NULL,\n  global_block INTEGER DEFAULT 0,\n  processed_at TEXT NOT NULL,\n  UNIQUE(email, client_id)\n);\n\nCREATE INDEX IF NOT EXISTS idx_leads_lookup ON lead_registry(email, client_id);</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>UNIQUE(email, client_id):</strong> This constraint creates a database-level lock. It guarantees that the same email cannot exist under the same client ID twice, providing database-level safety.</li><li><strong>CREATE INDEX:</strong> Indexes speed up lookups. Instead of scanning millions of rows row-by-row, SQLite builds a fast lookup tree on the `email` and `client_id` columns.</li><li><strong>isDuplicateForClient Method:</strong> The code executes the query:</li><pre>SELECT 1 FROM lead_registry \nWHERE email = ? AND (client_id = ? OR global_block = 1) \nLIMIT 1</pre><p>This checks if the email exists for the active tenant, OR if the lead is globally blocked. If a record is returned, the system immediately returns <code>true</code> and blocks the outbound campaign.</p></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Trigger a duplicate warning manually and verify that the database constraint blocks duplicate emails.</p><ul><li><strong>Step A:</strong> Open the file: <code>/Users/ashleybutler/ai-funnel-machine/intake/leads_test.csv</code>.</li><li><strong>Step B:</strong> Add a second row to the CSV sheet with the exact same email address as the first row, but change the company name to verify it is evaluated separately:</li><pre>businessName,email,firstName,lastName,niche,phone,website\n\"Pro Restoration\",\"pro@example.com\",\"John\",\"Smith\",\"water mitigation\",\"555-0199\",\"http://pro.com\"\n\"Alt Restoration\",\"pro@example.com\",\"John\",\"Smith\",\"water mitigation\",\"555-0199\",\"http://pro.com\"</pre><li><strong>Step C:</strong> Run the outbound pipeline in your terminal: <code>npx tsx run-outbound.ts --client=default_client</code>.</li><li><strong>Step D:</strong> Look at the logs. Confirm that the first row processes and outputs `Success!`, while the second row outputs <code>⚠️ [TENANT GUARD] Duplicate flagged for Client! Skipping...</code>. This confirms the system successfully caught and blocked the duplicate lead.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the key danger of sending multiple cold outreach emails to the same recipient in a short timeframe?",
+      "options": [
+        "The system runs out of database memory.",
+        "The recipient marks the email as spam, harming the sender domain's reputation and causing future emails to go to spam.",
+        "The Google Calendar API throws a rate limit error.",
+        "It compiles the code incorrectly."
+      ],
+      "answer": 1,
+      "explanation": "Spam complaints directly damage domain sender authority. Earning too many spam complaints will cause email providers to block your domain entirely, rendering it useless."
+    },
+    {
+      "question": "Which database table stores the historical record of outbound leads sent by each client?",
+      "options": [
+        "call_logs",
+        "lead_registry",
+        "knowledge_base",
+        "client_settings"
+      ],
+      "answer": 1,
+      "explanation": "lead_registry serves as the central record-keeping table that tracks which email addresses have been registered, processed, or globally blocked."
+    },
+    {
+      "question": "What does a global_block value of 1 indicate in a lead registry row?",
+      "options": [
+        "The lead is ready to be sent a Google Calendar link.",
+        "The lead is unsubscribed/blocked globally, and no client in the system is permitted to contact them.",
+        "The database connection has timed out.",
+        "The lead's phone number is verified."
+      ],
+      "answer": 1,
+      "explanation": "global_block = 1 represents an opt-out flag. Any queries checking duplication return true if this flag is set, blocking outreach across all tenants."
+    },
+    {
+      "question": "Why did we create the database index 'idx_leads_lookup'?",
+      "options": [
+        "To encrypt the email strings before writing to SQLite.",
+        "To speed up lead searches, preventing slow database scans as the lead volume grows over time.",
+        "To make the table read-only.",
+        "To sync data with Google Sheets."
+      ],
+      "answer": 1,
+      "explanation": "Indexes allow relational databases to locate target rows in logarithmic time instead of scanning every single row in the table, keeping verification times fast."
+    },
+    {
+      "question": "In the lead_registry table, what does the UNIQUE(email, client_id) constraint guarantee?",
+      "options": [
+        "That an email can only be contacted by a single client globally.",
+        "That no individual client can have the same email address registered more than once.",
+        "That all emails must end with .com.",
+        "That client_id must match a Google Calendar email."
+      ],
+      "answer": 1,
+      "explanation": "A composite UNIQUE constraint enforces uniqueness across the combination of columns. It blocks duplicate entries for the same client, while allowing different clients to contact the same email if needed."
+    }
+  ]
+}

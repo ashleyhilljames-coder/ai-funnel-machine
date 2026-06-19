@@ -1,0 +1,62 @@
+{
+  "title": "2.4 The B2B Discovery Call Framework",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>When a B2B prospect replies to your cold outreach email and expresses interest, you schedule them for a <strong>Discovery Call</strong>. A common amateur mistake is turning this call into a feature pitch. Copywriters and developers start showing off how smart their AI is, how many layers the network has, or how complex their backend routing is. This overwhelms the prospect and kills the deal.</p><p>Instead, we use a <strong>Diagnostic Sales Framework</strong>. Think of yourself as a doctor. A doctor doesn't walk into the room and list all the chemicals in a medicine. They ask questions to diagnose the patient's pain, and then prescribe the solution. The discovery call is structured into four exact phases:</p><ol><li><strong>Phase 1: Setting the Agenda (The Frame):</strong> Take control of the call. Establish that the goal of the call is to see if there is a fit, ask a few questions, and if it makes sense, schedule a live demo.</li><li><strong>Phase 2: Diagnostic Discovery (Finding the Pain):</strong> Ask open-ended questions to calculate their losses. How many calls do they get after hours? How do they handle emergencies? What happens if they miss a call? How much is their average customer worth?</li><li><strong>Phase 3: Prescribing the Solution (The Bridge):</strong> Connect their specific pain to our system. Do not explain the code; explain the outcome. (e.g. 'Since your average job is $5,000 and you miss about 5 calls a week, our system answers those 5 calls instantly, collects the details, and sends them to your phone').</li><li><strong>Phase 4: Securing the Close (Next Step):</strong> Do not ask them to buy yet. Ask to schedule a <strong>Live Demo Close</strong> where they will call the bot themselves and experience the system live. This builds high trust.</li></ol><h3>2. Code-Level & File Walkthrough</h3><p>While this is a sales strategy lesson, the questions we ask in the Discovery Phase map directly to the configurations we establish for their AI tenant in our codebase. For instance, the answers a contractor provides about their service area and dispatch rules are translated into SQLite configurations that override system prompts:</p><ul><li><strong>[client_settings Table in SQLite](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> This table contains the actual overrides for <code>voice_instructions</code> and <code>greeting</code> that represent their business rules.</li><li><strong>[server.ts](file:///Users/ashleybutler/ai-funnel-machine/src/server.ts):</strong> Routes traffic and API endpoints to match the client's internal software stack (like Webhooks or Google Sheets).</li></ul><p>Let's look at how client settings overrides are loaded during runtime connection requests in <code>index_new.ts</code>:</p><pre>export function getVoiceAgentInstructions(clientId: string): string {\n  const settings = leadGuard.getClientSettings(clientId);\n  if (settings && settings.voiceInstructions) {\n    return settings.voiceInstructions;\n  }\n  // Fallback to default prompts...\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-2:</strong> When the voice connection starts, we query the SQLite settings for the client ID. We look for a custom <code>voiceInstructions</code> prompt.</li><li><strong>Lines 3-5:</strong> If the client has specific dispatch rules (e.g., 'Only book dispatches for water mitigation, route roof tarping to another number'), this prompt string is loaded dynamically and sent to OpenAI to control the agent's behavior.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Roleplay the diagnostic phase of the call and practice calculating customer value metrics.</p><ul><li><strong>Step A:</strong> Review the following core diagnostic question checklist:</li><ul><li><em>'How do you guys currently handle calls that come in after hours or when your dispatchers are busy?'</em></li><li><em>'What is your average ticket size for an emergency dispatch call?'</em></li><li><em>'If you miss a call from a homeowner with an active leak, what percentage of them hang up and call someone else?'</em></li></ul><li><strong>Step B:</strong> Assume a plumbing contractor gets 10 missed calls per month, with a $1,500 average job value and a 50% capture rate from your bot. Calculate the monthly gross revenue recovered. (10 * 0.50 * $1,500 = $7,500 gross).</li><li><strong>Step C:</strong> Draft a 1-paragraph summary explaining this specific ROI value to the plumber in plain English, avoiding any mention of 'WebSockets' or 'APIs'.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary objective of Phase 2 (Diagnostic Discovery) in the discovery call framework?",
+      "options": [
+        "To explain the architecture of your TypeScript files.",
+        "To ask open-ended questions, identify the prospect's operational pain points, and calculate their monthly financial losses from missed calls.",
+        "To negotiate the final pricing contract immediately.",
+        "To demo the voice agent live."
+      ],
+      "answer": 1,
+      "explanation": "Discovery is about identifying pain. By asking questions, you get the prospect to state their own problems and calculate their own losses, which makes the sale natural."
+    },
+    {
+      "question": "Why is it a mistake to explain complex coding details (like WebSockets, RAG, or Pub/Sub) during a B2B sales call?",
+      "options": [
+        "Because these libraries are proprietary and illegal to discuss.",
+        "Because business owners only care about business outcomes (revenue and costs); technical jargon confuses them and makes the system feel risky.",
+        "Because Express servers do not support sales conversations.",
+        "Because it drains the server's API tokens."
+      ],
+      "answer": 1,
+      "explanation": "Clients buy results, not mechanisms. Confusing clients with technical details increases friction and slows down the sales process."
+    },
+    {
+      "question": "What is the recommended next step at the end of a successful discovery call (Phase 4)?",
+      "options": [
+        "Send them a 20-page technical integration manual.",
+        "Schedule a structured Live Demo Close where they will call a personalized prototype bot themselves.",
+        "Ask them to sign a 12-month contract immediately.",
+        "Deploy their site to Vercel."
+      ],
+      "answer": 1,
+      "explanation": "Scheduling a live demo is a low-friction next step. It gives you time to build a working prototype, which provides a 'wow' experience on the next call."
+    },
+    {
+      "question": "In the codebase, where are the custom business rules and prompt instructions collected during the discovery call saved?",
+      "options": [
+        "In the git log history.",
+        "Inside the client_settings SQLite database table, which dynamically overrides the voice agent's system prompt.",
+        "Inside the package.json dependencies array.",
+        "In the public/lessons.js file."
+      ],
+      "answer": 1,
+      "explanation": "Custom business rules (e.g. greeting, niche information) are stored in the client_settings SQLite table and loaded dynamically at connection time."
+    },
+    {
+      "question": "What percentage of callers are estimated to hang up without leaving a message if a service business redirects them to a standard voicemail?",
+      "options": [
+        "10%",
+        "25%",
+        "50%",
+        "75%"
+      ],
+      "answer": 3,
+      "explanation": "Industry data shows that 75% of emergency prospects hang up on a voicemail. They want an immediate answer and will call a competitor rather than wait for a callback."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "title": "1.8 System Maintenance, SOPs, & Troubleshooting",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>When running a production automation engine, code bugs and server outages are inevitable. If a server hosting your application goes offline or crashes, or if an external service like OpenAI or Anthropic is temporarily down, how do we prevent lead loss?</p><p>First, we containerize our code using <strong>Docker</strong>. Instead of relying on a local computer's specific node settings, Docker wraps the entire app in a lightweight virtual container. To make these containers secure and small, we use a <strong>Multi-Stage Build Pattern</strong>:</p><ul><li><strong>Stage 1 (Builder):</strong> Installs dev dependencies, TypeScript compilers, and compiles our code to standard JavaScript in a `/dist` directory. This environment contains a lot of bloated compiler files.</li><li><strong>Stage 2 (Production Runner):</strong> Starts with a fresh Node.js Alpine base image, installs only the lean runtime dependencies, and copies over the compiled `/dist` JavaScript. This reduces the container size from 1GB to about 150MB, speeding up deployment and reducing security vulnerability surfaces.</li></ul><p>Second, we handle API failures inside our message queues using **Ack/Nack Logic**:**</p><ul><li><strong>Acknowledge (Ack):</strong> Tells the Pub/Sub queue: 'We successfully processed this lead. You can safely delete it from the queue.'</li><li><strong>Negative Acknowledge (Nack):</strong> Tells the Pub/Sub queue: 'An error occurred (e.g., rate limits hit or API down). Do not delete this lead. Keep it safe in the queue and try sending it to us again in a few minutes.'</li></ul><h3>2. Code-Level & File Walkthrough</h3><p>The container and background queue configurations are found in:</p><ul><li><strong>[Dockerfile](file:///Users/ashleybutler/ai-funnel-machine/Dockerfile):</strong> Configures the multi-stage build.</li><li><strong>[subscriber.ts](file:///Users/ashleybutler/ai-funnel-machine/src/subscriber.ts):</strong> Manages Pub/Sub event processing and acknowledgements.</li></ul><p>Let's look at the subscriber loop in <code>subscriber.ts</code>:</p><pre>subscription.on('message', async (message: Message) => {\n  const lead = parseLead(message);\n  if (!lead) {\n    message.ack(); // Bad format - delete so it doesn't block the queue\n    return;\n  }\n\n  try {\n    await handler(lead); // Run agents & calendar bookings\n    message.ack(); // Success - delete lead\n  } catch (err) {\n    console.error('Handler failed, nacking message', err);\n    message.nack(); // Failure - retry processing later\n  }\n});</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 2-6:</strong> If a message has corrupt JSON and cannot be parsed into a valid lead structure, we call <code>message.ack()</code> to remove it. If we nacked it, it would loop forever, clogging the queue (this is called a poison pill).</li><li><strong>Lines 8-10:</strong> We execute our main agentic qualification and booking pipeline. If it executes without error, we call <code>message.ack()</code>.</li><li><strong>Lines 11-14:</strong> If an API call fails or times out, the catch block catches the error, logs it, and calls <code>message.nack()</code>. This tells Google Cloud to hold the message and send it back to the server for a retry after a backoff duration.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Examine the Docker multi-stage configuration and simulate a background task restart to verify logs work.</p><ul><li><strong>Step A:</strong> Open the file: <code>/Users/ashleybutler/ai-funnel-machine/Dockerfile</code> in your editor.</li><li><strong>Step B:</strong> Locate the <code>AS builder</code> segment on line 1, and the second <code>FROM node:22-alpine</code> statement on line 9. Notice how no source files (<code>.ts</code>) are copied into the final production image.</li><li><strong>Step C:</strong> Check that your dev server is running by inspecting the terminal output of the active background dev task (which runs <code>npm run dev</code>).</li><li><strong>Step D:</strong> If you want to check logs of the running subscriber, open a terminal window and check the logs using terminal utilities. You should see <code>Subscribed to leads-sub</code> in the log history, verifying connection.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary benefit of using a Multi-Stage Dockerfile build?",
+      "options": [
+        "It speeds up the SQLite SELECT query performance.",
+        "It compiles TypeScript files directly into SQL databases.",
+        "It minimizes the final production image size by leaving compilers and devDependencies out of the final runner image.",
+        "It translates Python code to JavaScript."
+      ],
+      "answer": 2,
+      "explanation": "Multi-stage builds allow you to run heavy compile processes in one container, and then copy only the static compiled output files to a fresh, small container for deployment, keeping the image small and secure."
+    },
+    {
+      "question": "What happens if a background worker throws an error during lead qualification and calls message.nack()?",
+      "options": [
+        "The lead record is permanently deleted from the queue.",
+        "The message is returned to the queue and will be retried automatically by the subscriber later.",
+        "The database is dropped.",
+        "The developer's Slack account is deleted."
+      ],
+      "answer": 1,
+      "explanation": "Nacking (Negative Acknowledging) a message tells the queue broker that processing failed. The broker puts the message back in the queue to be delivered again, ensuring reliability."
+    },
+    {
+      "question": "If an incoming message contains corrupt JSON that cannot be parsed, why must we call message.ack() instead of message.nack()?",
+      "options": [
+        "To save space on Google Drive.",
+        "To prevent a 'poison pill' loop, where a permanently unparseable message continuously loops and clogs the queue processing.",
+        "To force the server to restart.",
+        "To write the corrupt message to the SQLite database."
+      ],
+      "answer": 1,
+      "explanation": "If a message is corrupt, retrying it will fail forever. We must acknowledge it (ack) to remove it from the active queue, avoiding a poison pill blockage."
+    },
+    {
+      "question": "Which Alpine-based node image version is used to build and run the containers in the project Dockerfile?",
+      "options": [
+        "node:16-slim",
+        "node:22-alpine",
+        "node:latest-ubuntu",
+        "node:18-debian"
+      ],
+      "answer": 1,
+      "explanation": "The Dockerfile specifies node:22-alpine for both the builder and runtime stages, using the lightweight alpine-linux distribution."
+    },
+    {
+      "question": "In which file is the Pub/Sub subscriber listener loop configured?",
+      "options": [
+        "src/server.ts",
+        "src/subscriber.ts",
+        "src/lead.ts",
+        "src/config.ts"
+      ],
+      "answer": 1,
+      "explanation": "src/subscriber.ts initiates the Pub/Sub subscription event listener and handles message dispatching, acknowledgements, and error retries."
+    }
+  ]
+}

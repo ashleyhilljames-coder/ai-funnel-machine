@@ -1,0 +1,62 @@
+{
+  "title": "1.7 Conversational Voice Agents & Niche Prompts",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>Traditional voice response bots (IVRs) feel like robots. They ask you to 'press 1 for sales' and require long pauses. Even early AI voice bots have severe latency: you speak, wait 3-5 seconds while the system records you, sends the audio file to a server, transcribes it to text, gets a text response from an LLM, sends that text to a text-to-speech engine, and streams it back. In emergency services (like water leaks or fire restoration), a customer will hang up if the bot remains silent for 3 seconds.</p><p>To achieve human-like conversation with **under 1-second response times**, the AI Funnel Machine uses **WebSockets and OpenAI Realtime Streaming**:**</p><ul><li><strong>WebSockets:</strong> Establish a permanent, open channel between the user's browser, our server, and OpenAI's API. Instead of uploading static audio files, we stream raw audio bytes back and forth in real-time.</li><li><strong>PCM16 Audio Format:</strong> Uncompressed raw audio data. By avoiding audio compression codecs, we stream speech waves instantly as they are spoken.</li><li><strong>SQLite Dynamic Overrides:</strong> Instead of coding a single voice bot, each tenant (client) can customize their bot's voice profile (e.g., voice tone like 'onyx' or 'shimmer') and custom system instructions. These configurations are read dynamically when the WebSocket connection starts.</li></ul><h3>2. Code-Level & File Walkthrough</h3><p>The voice system is run through <strong>[index_new.ts](file:///Users/ashleybutler/ai-funnel-machine/src/index_new.ts)</strong> and tested in <strong>[verify_voice_settings.ts](file:///Users/ashleybutler/ai-funnel-machine/verify_voice_settings.ts)</strong>. Let's look at the WebSocket handshake in <code>index_new.ts</code>:</p><pre>wss.on('connection', (ws: WebSocket) => {\n  const openAiWs = new WebSocket(\n    'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01',\n    { headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, \"OpenAI-Beta\": \"realtime=v1\" } }\n  );\n\n  ws.on('message', (message: Buffer) => {\n    if (openAiWs.readyState === WebSocket.OPEN) {\n      openAiWs.send(JSON.stringify({\n        type: 'input_audio_buffer.append',\n        audio: message.toString('base64'),\n      }));\n    }\n  });\n});</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-5:</strong> When a user's web browser connects, our server opens a secondary WebSocket directly to OpenAI's Realtime WebSocket endpoint, passing our API key.</li><li><strong>Lines 7-14:</strong> As the browser captures microphone input, it sends raw audio buffers. Our server captures the `Buffer`, converts it to a base64 string, and forwards it instantly to OpenAI as an `input_audio_buffer.append` message.</li><li><strong>Tone & Instruction Resolution:</strong> When the socket opens, we invoke <code>getVoiceAgentVoice(clientId)</code>. If the client has configured a custom voice in SQLite (like `shimmer` or `onyx`), we load it; otherwise, we fall back to the default tone: `alloy`.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Verify that client voice settings are retrieved correctly and fall back to defaults when settings are missing.</p><ul><li><strong>Step A:</strong> Open your terminal and navigate to <code>/Users/ashleybutler/ai-funnel-machine</code>.</li><li><strong>Step B:</strong> Locate the voice validation script <code>verify_voice_settings.ts</code> in the root directory.</li><li><strong>Step C:</strong> Execute the verification script in the terminal by running:</li><pre>npx tsx verify_voice_settings.ts</pre><li><strong>Step D:</strong> Inspect the console output. Confirm that the test suite passes all 4 cases: Database Persistence, Custom Tone Override (Shimmer), Default Fallback (Alloy), and Niche Prompt Resolution. If any cases fail, verify your local SQLite database file `agentic_nexus.db` is not corrupted.</li></ul>",
+  "quizzes": [
+    {
+      "question": "Why is the raw WebSocket protocol preferred over traditional REST HTTP requests for conversational voice agents?",
+      "options": [
+        "Because HTTP requests are only compatible with Python and cannot run on Node.js.",
+        "Because WebSockets establish a permanent open connection, enabling real-time, low-latency streaming of audio bytes in under a second.",
+        "Because WebSockets automatically encrypt the SQLite database.",
+        "Because HTTP requests do not support audio files."
+      ],
+      "answer": 1,
+      "explanation": "WebSockets maintain a continuous bi-directional connection. Audio bytes can be pushed back and forth instantly without the overhead of opening new connection handshakes for every turn of conversation."
+    },
+    {
+      "question": "What audio format does the OpenAI Realtime API expect for incoming audio buffers?",
+      "options": [
+        "MP3 high-fidelity compression",
+        "Raw PCM16 uncompressed audio data",
+        "AAC streaming format",
+        "WAV file containers only"
+      ],
+      "answer": 1,
+      "explanation": "OpenAI's Realtime API consumes raw PCM16 audio buffers. Streaming uncompressed bytes avoids encoder/decoder delays, keeping conversation latency minimal."
+    },
+    {
+      "question": "What is the fallback voice tone used by the system if a client settings record is missing a voiceTone value?",
+      "options": [
+        "onyx",
+        "shimmer",
+        "alloy",
+        "nova"
+      ],
+      "answer": 2,
+      "explanation": "If no voice tone override is saved in SQLite, getVoiceAgentVoice is designed to return 'alloy' as the safe default tone configuration."
+    },
+    {
+      "question": "Which script executes the complete validation suite for testing SQLite client settings and prompt resolutions?",
+      "options": [
+        "npm run test",
+        "npx tsx verify_voice_settings.ts",
+        "node dist/server.js",
+        "npm run dev"
+      ],
+      "answer": 1,
+      "explanation": "verify_voice_settings.ts is a diagnostic runner specifically created to test the retrieval and resolution of client-specific voice and prompt properties."
+    },
+    {
+      "question": "How does the browser transmit user voice data to our Express/WebSocket server?",
+      "options": [
+        "By writing a temporary file and uploading it via POST /api/voice.",
+        "By streaming audio buffers through a persistent /voice-stream WebSocket connection.",
+        "By sending the transcript text via a chat message.",
+        "By copying the voice recording directly into Google Sheets."
+      ],
+      "answer": 1,
+      "explanation": "The client-side page opens a WebSocket connection to the path `/voice-stream` and streams audio byte buffers from the user's microphone in real-time."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "title": "3.2 Custom Tenant Provisioning & Prompt Engineering",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>A single AI Funnel Machine instance can serve a plumbing company in Las Vegas, a roofing contractor in Texas, and a property manager in Florida simultaneously. This is called <strong>Multi-Tenant Software</strong>. To make this work, the system must load different behaviors, voices, and instructions dynamically depending on who is calling.</p><p>Instead of hardcoding separate prompts or deploying separate servers for each client (which is expensive and hard to manage), we use **SQLite Dynamic Provisioning** and **System Prompt Engineering**:</p><ul><li><strong>Tenant Partitioning:</strong> Every client Settings record has a unique <code>client_id</code>. When a phone call hits Twilio or a chat widget opens, the request passes this ID.</li><li><strong>Prompt Templates:</strong> We design system prompt templates that incorporate client-specific variables (company name, service offerings, greeting text, call instructions).</li><li><strong>Model Configuration Overrides:</strong> We store custom system instructions and voice parameters in the database. When the agent session initializes, the system loads these overrides, changing the AI's behavior in real-time.</li></ul><h3>2. Code-Level & File Walkthrough</h3><p>Custom provisioning and dynamic prompt loading are managed in:</p><ul><li><strong>[index_new.ts](file:///Users/ashleybutler/ai-funnel-machine/src/index_new.ts):</strong> Contains the client config resolvers and fallback system prompts.</li><li><strong>[leadGuard.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Provisions the database schema for the <code>client_settings</code> table.</li></ul><p>Let's look at the niche prompt resolver in <code>index_new.ts</code>:</p><pre>export function getVoiceAgentInstructions(clientId: string): string {\n  const settings = leadGuard.getClientSettings(clientId);\n  if (settings && settings.voiceInstructions) {\n    return settings.voiceInstructions;\n  }\n  const config = CLIENT_CONFIGS[clientId] || CLIENT_CONFIGS.default_client;\n  \n  if (clientId === 'realestate_nexus') {\n    return `You are an elite, professional, and friendly real estate booking assistant for ${config.name}...`;\n  }\n  // default niche prompts...\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-4:</strong> The code queries the SQLite database for the client settings. If the database has a custom <code>voiceInstructions</code> override, it returns it immediately. This allows us to update agent prompts in real-time without redeploying code.</li><li><strong>Lines 5-7:</strong> If no database record is found, it falls back to the hardcoded config map (<code>CLIENT_CONFIGS</code>).</li><li><strong>Lines 8-11:</strong> It evaluates the client's industry sector and returns a pre-engineered prompt template, injecting the client's company name (e.g. `${config.name}`). This prompt controls the agent's tone, rules, and conversation goals.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Provision a new client in the database and verify that prompt overrides resolve correctly.</p><ul><li><strong>Step A:</strong> Review the default client configs in <code>src/index_new.ts</code> (lines 36-67) to see the hardcoded structures.</li><li><strong>Step B:</strong> Open your terminal in <code>/Users/ashleybutler/ai-funnel-machine</code>.</li><li><strong>Step C:</strong> Execute the verification script:</li><pre>npx tsx verify_voice_settings.ts</pre><li><strong>Step D:</strong> Inspect the logs. Check that Case 4 (Default Niche Prompt Fallback) executes successfully, demonstrating that the system resolves the correct instructions even if no database override row exists.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary benefit of multi-tenant database-driven prompt engineering?",
+      "options": [
+        "It speeds up the Vercel deployment time.",
+        "It allows you to serve multiple clients with distinct business rules using a single server deployment by loading configurations dynamically from the database.",
+        "It eliminates the need for any AI models.",
+        "It encrypts the customer's phone number."
+      ],
+      "answer": 1,
+      "explanation": "Dynamic provisioning pulls configs from SQLite at runtime. This allows you to scale to hundreds of clients on a single server without having to rewrite or redeploy code for each tenant."
+    },
+    {
+      "question": "Which database table stores the custom system instructions and voice settings for each client?",
+      "options": [
+        "lead_registry",
+        "client_settings",
+        "call_logs",
+        "knowledge_base"
+      ],
+      "answer": 1,
+      "explanation": "The client_settings table is structured to store all tenant-specific details, including phone numbers, greetings, calendars, and voice prompts."
+    },
+    {
+      "question": "What happens if getVoiceAgentInstructions finds a custom string in the 'voice_instructions' database field?",
+      "options": [
+        "It throws an error and falls back to default settings.",
+        "It overrides all system defaults and returns the custom instruction string directly to the AI connection.",
+        "It deletes the row from SQLite.",
+        "It shuts down the server."
+      ],
+      "answer": 1,
+      "explanation": "If a custom database override exists, the system prioritizes it and returns it immediately, bypassing default templates."
+    },
+    {
+      "question": "In the getVoiceAgentInstructions function, what is the default fallback if no database record or client config matches the ID?",
+      "options": [
+        "It uses realestate_nexus settings.",
+        "It falls back to the default_client configuration (Syncro Scale).",
+        "It returns an empty string.",
+        "It crashes the server."
+      ],
+      "answer": 1,
+      "explanation": "To prevent runtime crashes, the resolver falls back to the default_client configuration (Syncro Scale) if no matching client configs are found."
+    },
+    {
+      "question": "How does the system ensure that the AI model does not step out of bounds (e.g. quote prices or discuss competition)?",
+      "options": [
+        "By deleting the OpenAI API key.",
+        "By enforcing strict system prompts with explicit rules ('do not quote prices, direct users to estimators') and validating outputs.",
+        "By limiting the length of the user's responses.",
+        "By running on a local offline container."
+      ],
+      "answer": 1,
+      "explanation": "Explicit constraints within system prompts ('guardrails') instruct the model on what it is not allowed to say, mitigating the risk of hallucinations."
+    }
+  ]
+}

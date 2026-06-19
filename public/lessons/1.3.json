@@ -1,0 +1,62 @@
+{
+  "title": "1.3 The Agentic Qualification Pipeline",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>In B2B lead generation, the biggest cost drain is spending money and time on low-quality leads. For example, if someone enters 'asdf' as their name and 'spam@spam.com' as their email, we do not want to call heavy, expensive AI models (like GPT-4) to evaluate their brand fit or book a call on our calendar.</p><p>The AI Funnel Machine uses a <strong>Double-Gated Qualification Pipeline</strong>. Instead of running one massive prompt that tries to do everything (which is expensive and prone to hallucinations), we break it into smaller, specialized steps called <strong>Gates</strong>:</p><ul><li><strong>Gate 1: The Qualifier Agent (Claude Haiku):</strong> Checks the baseline criteria. Does the lead have a first name, last name, valid email, company name, and phone number? Haiku is extremely fast and inexpensive. If the lead is incomplete, we block it here and exit immediately (early exit).</li><li><strong>Gate 2: The Evaluator Agent (Claude Sonnet/RAG):</strong> If the lead passes Gate 1, we pull client-specific data (using Retrieval-Augmented Generation, or RAG) and evaluate if the business matches the specific niche of the client. This is a heavier, more intelligent step.</li></ul><p>By using this double-gate system, we terminate bad leads early. This keeps our API costs minimal and ensures only high-quality prospects receive calendar links or outreach emails.</p><h3>2. Code-Level & File Walkthrough</h3><p>The core qualification gate is managed in <strong>[qualifier.ts](file:///Users/ashleybutler/ai-funnel-machine/src/agents/qualifier.ts)</strong>. Let's look at the structured call to Claude Haiku:</p><pre>export const QualificationResultSchema = z.object({\n  qualified: z.boolean(),\n  score: z.number().int().min(0).max(100),\n  reason: z.string(),\n});\n\nconst SYSTEM_PROMPT = `You are a B2B lead qualification agent...\nCRITICAL RULE: If a lead does not have a phone number...\nthe score must be capped below 60, and qualified must be false.`;</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>Lines 1-5:</strong> We define a Zod schema <code>QualificationResultSchema</code>. This ensures that whatever JSON response the AI model returns, it will be strictly typed and validated before the rest of the application runs.</li><li><strong>Lines 7-10:</strong> The <code>SYSTEM_PROMPT</code> instructs the model on how to score. It enforces a strict business rule: **leads without a phone number fail immediately (score < 60)**. This acts as a strict gateway for outbound phone agents.</li><li><strong>Calling the Agent:</strong> The function <code>QualifierAgent</code> sends the lead's JSON object to Claude. It specifies a single tool choice: <code>qualify_lead</code>. This forces the model to return structured parameters matching our Zod schema rather than returning a conversational chat message.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Verify that the phone gate rule successfully filters out leads missing a phone number early, saving API expenses.</p><ul><li><strong>Step A:</strong> Open the terminal and navigate to <code>/Users/ashleybutler/ai-funnel-machine</code>.</li><li><strong>Step B:</strong> Look at <code>src/agents/qualifier.ts</code> to review the <code>SYSTEM_PROMPT</code> on line 16.</li><li><strong>Step C:</strong> Open your configuration file or terminal, and execute the test suite via <code>npm run test:lead</code>.</li><li><strong>Step D:</strong> Inspect the terminal logs. In the output, you will see two mock leads run through the pipeline. Verify that the lead without a phone number exits with a score under 60 and prints <code>Outcome: disqualified</code>, and that no subsequent calendar calls or email dispatches are made for it.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the key benefit of running a double-gated agentic pipeline over a single massive LLM prompt?",
+      "options": [
+        "It speeds up the SQLite database queries.",
+        "It saves token costs by exiting early on poor-quality leads using a cheap model before invoking heavier, expensive models.",
+        "It eliminates the need for any backend Express APIs.",
+        "It forces the browser to run HTML pages faster."
+      ],
+      "answer": 1,
+      "explanation": "By checking basic requirements (Gate 1) with an inexpensive, fast model like Claude Haiku, we can immediately disqualify spam leads and prevent paying for expensive, heavy LLM calls in subsequent steps."
+    },
+    {
+      "question": "According to the qualifier.ts system instructions, what is the maximum score a lead can receive if it is missing a phone number?",
+      "options": [
+        "100",
+        "85",
+        "59",
+        "0"
+      ],
+      "answer": 2,
+      "explanation": "The system prompt explicitly states: 'If a lead does not have a phone number, the score must be capped below 60, and qualified must be false.' Therefore, 59 is the maximum possible score."
+    },
+    {
+      "question": "How do we guarantee that the LLM returns structured JSON data instead of raw text paragraphs?",
+      "options": [
+        "We encrypt the API payload.",
+        "We use system tools (function calling) and enforce a strict tool choice schema matching a Zod shape.",
+        "We parse the response with a regex expression.",
+        "We use a separate SQL query to clean the text."
+      ],
+      "answer": 1,
+      "explanation": "Enforcing function calling (tool use) with an input schema forces the model to respond by populating structured arguments, which we then validate with Zod."
+    },
+    {
+      "question": "What does a qualification score of 45 signify in the pipeline?",
+      "options": [
+        "The lead is highly qualified and will be sent a Google Calendar link.",
+        "The lead is disqualified and the pipeline terminates early.",
+        "The database has run out of storage.",
+        "The Google Sheets sync failed."
+      ],
+      "answer": 1,
+      "explanation": "Leads must achieve a score of 60 or higher to be qualified. A score of 45 is disqualified and triggers an early exit."
+    },
+    {
+      "question": "Which tool parameter forces the model to respond using our defined schema structure rather than writing a chat response?",
+      "options": [
+        "max_tokens: 256",
+        "tool_choice: { type: 'auto' } (or forced tool call)",
+        "model: 'claude-haiku-4-5-20251001'",
+        "system: [{ type: 'text', text: SYSTEM_PROMPT }]"
+      ],
+      "answer": 1,
+      "explanation": "Providing tools and setting tool choice allows the model to select our structure, guaranteeing that it answers via structured parameters rather than verbose conversation."
+    }
+  ]
+}

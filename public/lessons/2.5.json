@@ -1,0 +1,62 @@
+{
+  "title": "2.5 The Live Demo Close (The 'Wow' Experience)",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>In B2B software sales, showing is a hundred times more powerful than telling. You can talk about AI all day, but prospects will remain skeptical until they see it work. The ultimate sales mechanism for our system is the <strong>Interactive Live Demo Close</strong>.</p><p>Instead of screen-sharing slide decks, we build a working prototype for the prospect's business *before* the call. The process works in 5 steps:</p><ol><li><strong>Setup:</strong> We provision a mock profile in our SQLite database using the prospect's company name, niche, and a dedicated Twilio phone number.</li><li><strong>The Prompt:</strong> During the Zoom call, we say: 'I built a prototype for your company, Sin City Roofing. Here is a phone number. Call it right now on speakerphone.'</li><li><strong>The Conversation:</strong> The prospect dials the number. The AI voice agent answers instantly with their company name: 'Hello! Thank you for calling Sin City Roofing...' The prospect speaks to the bot, testing it with realistic customer questions.</li><li><strong>The Booking:</strong> The bot qualifies the prospect and says: 'I can get a tech to look at your roof tomorrow at 2 PM. What is your email?' The prospect gives their email.</li><li><strong>The Wow Moment:</strong> The bot books the meeting. Within 3 seconds, a Google Calendar invite pops up on the prospect's screen. They see the AI work in real-time. The skepticism vanishes, and the sale is practically closed.</li></ol><h3>2. Code-Level & File Walkthrough</h3><p>To provision the prototype, we use the SQLite database structure. The configuration fields must match the prospect's business profile. Let's look at the database helper methods and schema attributes responsible for dynamic loading:</p><ul><li><strong>[leadGuard.ts](file:///Users/ashleybutler/ai-funnel-machine/src/outbound/leadGuard.ts):</strong> Contains the schema mapping for <code>client_settings</code> and the <code>saveClientSettings</code> method that writes configurations to the DB.</li><li><strong>[index_new.ts](file:///Users/ashleybutler/ai-funnel-machine/src/index_new.ts):</strong> Resolves these DB configurations at runtime when the Twilio call hits our Webhook endpoint.</li></ul><p>Let's look at the database write statement in <code>leadGuard.ts</code>:</p><pre>public saveClientSettings(clientId: string, settings: any) {\n  const query = this.db.prepare(`\n    INSERT OR REPLACE INTO client_settings (\n      client_id, name, niche, greeting, chat_greeting, google_calendar_id, twilio_phone_number, voice_instructions, updated_at\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n  `);\n  query.run(\n    clientId, settings.name, settings.niche, settings.greeting, settings.chatGreeting,\n    settings.googleCalendarId, settings.twilioPhoneNumber, settings.voiceInstructions, new Date().toISOString()\n  );\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>INSERT OR REPLACE:</strong> This SQL command checks if the client ID already exists. If it does, it overwrites the settings with our new sales prototype values. If not, it inserts a new row. This allows us to quickly spin up custom prototypes on the fly.</li><li><strong>Query Execution:</strong> We save the target business name, niche-specific greetings, and calendar IDs. When the Twilio webhook receives an incoming phone call, it queries this row to guide the conversation.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Provision a prototype tenant in the SQLite database and verify its settings are stored successfully.</p><ul><li><strong>Step A:</strong> Ensure your local dev server is running (<code>npm run dev</code>).</li><li><strong>Step B:</strong> Open your terminal and review the test script <code>verify_voice_settings.ts</code>. Notice how it writes mock settings on line 29.</li><li><strong>Step C:</strong> Execute the verification script to verify SQLite writes settings successfully:</li><pre>npx tsx verify_voice_settings.ts</pre><li><strong>Step D:</strong> If the tests pass, the prototype database engine is verified. To provision a real sales demo, you would replace the values inside your database manager console with your prospect's business coordinates.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is the primary psychological purpose of the 'Wow' moment in the live demo close?",
+      "options": [
+        "To show the prospect that you write clean TypeScript code.",
+        "To eliminate buyer skepticism by letting them experience the speed, voice quality, and instant calendar booking of the prototype live.",
+        "To demonstrate your skills in Docker containerization.",
+        "To explain the details of the Resend API."
+      ],
+      "answer": 1,
+      "explanation": "Letting the customer experience the product themselves makes the value undeniable. When they call the bot and get an instant calendar invite, they witness the solution in action."
+    },
+    {
+      "question": "Which SQL statement is used in LeadGuard to write or update prototype settings for a client?",
+      "options": [
+        "SELECT * FROM client_settings",
+        "INSERT OR REPLACE INTO client_settings",
+        "DELETE FROM client_settings",
+        "DROP TABLE client_settings"
+      ],
+      "answer": 1,
+      "explanation": "INSERT OR REPLACE allows you to insert new tenant profiles or overwrite existing ones dynamically, simplifying the management of demo clients."
+    },
+    {
+      "question": "What happens when a prospect calls the dedicated Twilio number during a live demo?",
+      "options": [
+        "Twilio sends a webhook request to our server, which queries SQLite for the client's custom greeting and prompt, and establishes a realtime WebSocket stream to OpenAI.",
+        "The call is routed to a manual voicemail box.",
+        "The database is automatically deleted.",
+        "It sends a text message containing the source code."
+      ],
+      "answer": 0,
+      "explanation": "An incoming Twilio call triggers a webhook. The server reads the tenant settings from the database, feeds the custom prompt to the AI, and streams the conversation in real-time."
+    },
+    {
+      "question": "Why do we use the 'INSERT OR REPLACE' command instead of a standard 'INSERT' command in SQLite?",
+      "options": [
+        "It uses less network bandwidth.",
+        "It prevents SQL unique constraint errors if a client configuration already exists, updating the existing record instead.",
+        "It compiles the code to JavaScript.",
+        "It is required by Vercel deployments."
+      ],
+      "answer": 1,
+      "explanation": "A standard INSERT fails if the primary key (client_id) already exists. INSERT OR REPLACE updates the record if it exists, ensuring smooth configuration updates."
+    },
+    {
+      "question": "If a B2B prospect asks if the bot can integrate with their specific email server, which value proposition should you emphasize?",
+      "options": [
+        "That Vercel supports git integrations.",
+        "That our Express backend uses flexible REST APIs and Webhooks that can connect to practically any modern CRM or software stack.",
+        "That Zod validation is extremely fast.",
+        "That SQLite holds binary files."
+      ],
+      "answer": 1,
+      "explanation": "Highlighting flexibility and integration capabilities via webhooks reassures the prospect that the system can integrate with their existing workflows."
+    }
+  ]
+}

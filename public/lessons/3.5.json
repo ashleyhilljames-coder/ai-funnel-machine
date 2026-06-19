@@ -1,0 +1,62 @@
+{
+  "title": "3.5 Managing Scope Creep & Retainer Maintenance",
+  "lecture": "<h3>1. Conceptual Breakdown (The \"What\" and \"Why\")</h3><p>In agency operations, the most dangerous threat to profitability is <strong>Scope Creep</strong>. Once a client is happy with their AI agent, they will start asking for 'little favors': <em>'Can you make the bot sync with our CRM?'</em>, <em>'Can you build an automated SMS follow-up?'</em>, <em>'Can we set up a dashboard for our sales reps?'</em></p><p>If you agree to do these for free under the guise of 'maintenance', your hourly rate will plunge to zero, and you will run out of development capacity. You must separate **Retainer Maintenance** from **Feature Upgrades**:</p><ul><li><strong>Retainer Maintenance (Included):</strong> Ensuring the server stays online, updating system keys, fixing bugs, and minor prompt tweaks (e.g., changing a contact phone number in the greeting).</li><li><strong>Feature Upgrades (Billable Add-ons):</strong> Building new software integrations, setting up automated outbound campaigns, writing custom RAG data parsers, or adding new communication channels.</li></ul><p>Instead of saying 'no' to upgrades, say 'yes' and send a **High-Margin Upsell Menu**. Frame additions as paid expansion packages, turning scope creep into a new source of revenue.</p><h3>2. Code-Level & File Walkthrough</h3><p>To prevent scope creep, our software codebase separates core engine features from custom external integrations. Let's look at how integrations are isolated in our codebase:</p><ul><li><strong>[integrationService.ts](file:///Users/ashleybutler/ai-funnel-machine/src/services/integrationService.ts):</strong> Contains isolated integrations for CRMs (Real Estate CRM, FieldPulse tickets, Calendly links) that are activated only for clients paying for premium upgrade packages.</li><li><strong>[index_new.ts](file:///Users/ashleybutler/ai-funnel-machine/src/index_new.ts):</strong> Evaluates if a client has these premium integrations active before triggering them.</li></ul><p>Let's look at the integration dispatcher in <code>index_new.ts</code>:</p><pre>if (clientId === 'restoration_lv') {\n  await createFieldPulseTicket(leadDetails);\n}\nif (clientId === 'realestate_nexus') {\n  await syncToRealEstateCRM(leadDetails);\n}</pre><h4>Line-by-Line Breakdown:</h4><ul><li><strong>createFieldPulseTicket / syncToRealEstateCRM:</strong> These integrations are client-specific. They are not bundled into the default core pipeline. By keeping them isolated inside conditional blocks, we ensure they are only configured and executed for clients who are paying for the corresponding integration upsell package.</li></ul>",
+  "exercise": "<h3>3. Step-by-Step Guided Exercise</h3><p>Review the integration service file and understand how custom CRM integrations are isolated from the core code.</p><ul><li><strong>Step A:</strong> Open the file: <code>/Users/ashleybutler/ai-funnel-machine/src/services/integrationService.ts</code> in your editor.</li><li><strong>Step B:</strong> Locate the <code>syncToRealEstateCRM</code> and <code>createFieldPulseTicket</code> functions. Notice how they target third-party APIs.</li><li><strong>Step C:</strong> Draft an email response to a client who asks to sync their lead database with their CRM:</li><pre>\"Hi [Client Name], we can absolutely sync your AI lead capture with your CRM! This is covered under our CRM Integration Package ($1,000 setup + $150/mo retainer upgrade). Let me know if you'd like me to send over the 1-page addendum to get started.\"</pre><li><strong>Step D:</strong> Confirm how this email maintains boundaries while offering an upsell opportunity.</li></ul>",
+  "quizzes": [
+    {
+      "question": "What is 'Scope Creep' in agency operations?",
+      "options": [
+        "A database bug that causes files to grow too large.",
+        "The gradual expansion of a project's requirements beyond the originally agreed-upon scope without additional compensation.",
+        "A script that automatically updates npm packages.",
+        "An authentication timeout on Twilio."
+      ],
+      "answer": 1,
+      "explanation": "Scope creep happens when clients request extra features, custom configurations, or integrations, and you build them for free under the original retainer, draining your resources."
+    },
+    {
+      "question": "Which of the following is considered standard maintenance covered under a regular monthly retainer?",
+      "options": [
+        "Building a custom Salesforce integration.",
+        "Ensuring the Express server stays online, updating API keys, and making minor greeting text edits.",
+        "Setting up a new outbound email campaign.",
+        "Configuring a new Twilio voice gateway."
+      ],
+      "answer": 1,
+      "explanation": "Standard maintenance covers basic upkeep, bug fixes, and minor adjustments to keep the existing setup running smoothly, without adding new functional scope."
+    },
+    {
+      "question": "Where are the custom CRM sync functions isolated in the project codebase?",
+      "options": [
+        "src/agents/qualifier.ts",
+        "src/services/integrationService.ts",
+        "src/outbound/leadGuard.ts",
+        "public/lessons.js"
+      ],
+      "answer": 1,
+      "explanation": "src/services/integrationService.ts isolates third-party integrations (like CRMs or support tickets) from the core lead qualification code, keeping the codebase modular."
+    },
+    {
+      "question": "How should an agency react when a client asks to build a new feature that was not in the original contract?",
+      "options": [
+        "Refuse the request and ignore the client.",
+        "Build the feature for free to keep the client happy.",
+        "Politely explain that the feature is an upgrade, and send them a pricing menu for the new package.",
+        "Delete the client settings from SQLite."
+      ],
+      "answer": 2,
+      "explanation": "Offering the upgrade as a paid add-on maintains professional boundaries, protects your margins, and opens up new upsell opportunities."
+    },
+    {
+      "question": "If a tenant has the ID 'realestate_nexus', which custom integration is triggered in the server code?",
+      "options": [
+        "createFieldPulseTicket",
+        "syncToRealEstateCRM",
+        "bookCalendlyAppointment",
+        "resend.emails.send"
+      ],
+      "answer": 1,
+      "explanation": "In index_new.ts, client conditional checks trigger syncToRealEstateCRM specifically for realestate_nexus leads."
+    }
+  ]
+}
