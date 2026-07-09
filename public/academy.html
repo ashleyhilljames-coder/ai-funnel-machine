@@ -1,744 +1,1286 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Syncro Scale Academy — B2B Operations, Sales & Fulfillment</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-dark: #090d16;
-      --bg-card: rgba(17, 24, 39, 0.7);
-      --bg-sidebar: #101524;
-      --border-color: rgba(255, 255, 255, 0.08);
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --accent-purple: #a855f7;
-      --accent-blue: #3b82f6;
-      --accent-green: #10b981;
-      --accent-red: #ef4444;
-      --gradient-main: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-      --transition-speed: 0.3s;
-    }
+ <meta charset="UTF-8">
+ <meta name="viewport"content="width=device-width, initial-scale=1.0">
+ <title>Syncro Scale Academy — B2B Operations, Sales & Fulfillment</title>
+ <link rel="preconnect"href="https://fonts.googleapis.com">
+ <link rel="preconnect"href="https://fonts.gstatic.com"crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap"rel="stylesheet">
+ <style>
+ :root {
+ --bg-dark: #090d16;
+ --bg-card: rgba(17, 24, 39, 0.7);
+ --bg-sidebar: #101524;
+ --border-color: rgba(255, 255, 255, 0.08);
+ --text-main: #f3f4f6;
+ --text-muted: #9ca3af;
+  --accent-purple: #a855f7;
+  --accent-purple-hover: #7c4ee4;
+  --accent-blue: #3b82f6;
+ --accent-green: #10b981;
+ --accent-red: #ef4444;
+ --gradient-main: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+ --transition-speed: 0.3s;
+ }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+ * {
+ box-sizing: border-box;
+ margin: 0;
+ padding: 0;
+ }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
+ body {
+ font-family: 'Inter', sans-serif;
+ background-color: var(--bg-dark);
+ color: var(--text-main);
+ display: flex;
+ height: 100vh;
+ overflow: hidden;
+ }
 
-    /* Sidebar Layout */
-    .sidebar {
-      width: 320px;
-      background-color: var(--bg-sidebar);
-      border-right: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      height: 100%;
-    }
+ /* Sidebar Layout */
+ .sidebar {
+ width: 320px;
+ background-color: var(--bg-sidebar);
+ border-right: 1px solid var(--border-color);
+ display: flex;
+ flex-direction: column;
+ flex-shrink: 0;
+ height: 100%;
+ transition: margin-left var(--transition-speed) ease;
+ }
 
-    .sidebar-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+ .sidebar.collapsed {
+ margin-left: -320px;
+ }
 
-    .logo-container {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+ .sidebar-header {
+ padding: 24px;
+ border-bottom: 1px solid var(--border-color);
+ display: flex;
+ flex-direction: column;
+ gap: 8px;
+ }
 
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--gradient-main);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 18px;
-      font-family: 'Outfit', sans-serif;
-      color: #fff;
-    }
+ .logo-container {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ }
 
-    .logo-text {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 20px;
-      background: var(--gradient-main);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+ .logo-icon {
+ width: 32px;
+ height: 32px;
+ background: var(--gradient-main);
+ border-radius: 8px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-weight: 800;
+ font-size: 18px;
+ font-family: 'Outfit', sans-serif;
+ color: #fff;
+ }
 
-    .progress-wrapper {
-      margin-top: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+ .logo-text {
+ font-family: 'Outfit', sans-serif;
+ font-weight: 700;
+ font-size: 20px;
+ background: var(--gradient-main);
+ -webkit-background-clip: text;
+ -webkit-text-fill-color: transparent;
+ }
 
-    .progress-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
+ .progress-wrapper {
+ margin-top: 16px;
+ display: flex;
+ flex-direction: column;
+ gap: 8px;
+ }
 
-    .progress-bar-bg {
-      width: 100%;
-      height: 6px;
-      background-color: rgba(255, 255, 255, 0.05);
-      border-radius: 3px;
-      overflow: hidden;
-    }
+ .progress-header {
+ display: flex;
+ justify-content: space-between;
+ font-size: 12px;
+ color: var(--text-muted);
+ font-weight: 500;
+ }
 
-    .progress-bar-fill {
-      height: 100%;
-      background: var(--gradient-main);
-      width: 0%;
-      transition: width var(--transition-speed) ease;
-    }
+ .progress-bar-bg {
+ width: 100%;
+ height: 6px;
+ background-color: rgba(255, 255, 255, 0.05);
+ border-radius: 3px;
+ overflow: hidden;
+ }
 
-    .sidebar-content {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 20px 12px;
-    }
+ .progress-bar-fill {
+ height: 100%;
+ background: var(--gradient-main);
+ width: 0%;
+ transition: width var(--transition-speed) ease;
+ }
 
-    .module-group {
-      margin-bottom: 24px;
-    }
+ .sidebar-content {
+ flex-grow: 1;
+ overflow-y: auto;
+ padding: 20px 12px;
+ }
 
-    .module-title {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 0 12px 10px 12px;
-    }
+ .module-group {
+ margin-bottom: 24px;
+ }
 
-    .lesson-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      color: var(--text-muted);
-      transition: all var(--transition-speed) ease;
-      text-decoration: none;
-      margin-bottom: 4px;
-    }
+ .module-title {
+ font-family: 'Outfit', sans-serif;
+ font-weight: 600;
+ font-size: 13px;
+ color: var(--text-muted);
+ text-transform: uppercase;
+ letter-spacing: 0.05em;
+ padding: 0 12px 10px 12px;
+ }
 
-    .lesson-item:hover {
-      background-color: rgba(255, 255, 255, 0.03);
-      color: var(--text-main);
-    }
+ .lesson-item {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ padding: 12px;
+ border-radius: 8px;
+ cursor: pointer;
+ font-size: 14px;
+ color: var(--text-muted);
+ transition: all var(--transition-speed) ease;
+ text-decoration: none;
+ margin-bottom: 4px;
+ }
 
-    .lesson-item.active {
-      background: rgba(168, 85, 247, 0.15);
-      border-left: 3px solid var(--accent-purple);
-      color: #fff;
-      font-weight: 500;
-    }
+ .lesson-item:hover {
+ background-color: rgba(255, 255, 255, 0.03);
+ color: var(--text-main);
+ }
 
-    .lesson-checkbox {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      border: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      color: transparent;
-      flex-shrink: 0;
-      background-color: rgba(0, 0, 0, 0.2);
-    }
+ .lesson-item.active {
+ background: rgba(168, 85, 247, 0.15);
+ border-left: 3px solid var(--accent-purple);
+ color: #fff;
+ font-weight: 500;
+ }
 
-    .lesson-item.completed .lesson-checkbox {
-      background-color: var(--accent-green);
-      border-color: var(--accent-green);
-      color: #fff;
-    }
+ .lesson-checkbox {
+ width: 16px;
+ height: 16px;
+ border-radius: 4px;
+ border: 1px solid var(--border-color);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 10px;
+ color: transparent;
+ flex-shrink: 0;
+ background-color: rgba(0, 0, 0, 0.2);
+ }
 
-    /* Main Content Layout */
-    .main-viewport {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background: radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.08), transparent 50%),
-                  radial-gradient(circle at 20% 80%, rgba(168, 85, 247, 0.08), transparent 50%);
-    }
+ .lesson-item.completed .lesson-checkbox {
+ background-color: var(--accent-green);
+ border-color: var(--accent-green);
+ color: #fff;
+ }
 
-    .viewport-header {
-      padding: 24px 40px;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      backdrop-filter: blur(10px);
-      background-color: rgba(9, 13, 22, 0.5);
-    }
+ /* Main Content Layout */
+  .main-viewport {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.08), transparent 50%),
+  radial-gradient(circle at 20% 80%, rgba(168, 85, 247, 0.08), transparent 50%);
+  }
 
-    .header-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+  .viewport-header {
+  padding: 24px 40px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  background-color: rgba(9, 13, 22, 0.5);
+  }
 
-    .module-subtitle {
-      font-size: 12px;
-      color: var(--accent-purple);
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-    }
+  .sidebar-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-muted);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  margin-right: 16px;
+  flex-shrink: 0;
+  }
+  .sidebar-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+  }
+  .toggle-icon-svg {
+  width: 20px;
+  height: 20px;
+  }
 
-    .lesson-main-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
-      font-weight: 700;
-    }
+ .header-info {
+ display: flex;
+ flex-direction: column;
+ gap: 4px;
+ }
 
-    .complete-action {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      border-radius: 8px;
-      background-color: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-color);
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all var(--transition-speed) ease;
-    }
+ .module-subtitle {
+ font-size: 12px;
+ color: var(--accent-purple);
+ text-transform: uppercase;
+ font-weight: 600;
+ letter-spacing: 0.1em;
+ }
 
-    .complete-action:hover {
-      background-color: rgba(255, 255, 255, 0.08);
-    }
+ .lesson-main-title {
+ font-family: 'Outfit', sans-serif;
+ font-size: 24px;
+ font-weight: 700;
+ }
 
-    .complete-action.completed {
-      background-color: rgba(16, 185, 129, 0.15);
-      border-color: var(--accent-green);
-      color: var(--accent-green);
-    }
+  .complete-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition-speed) ease;
+  margin-left: auto;
+  }
 
-    .viewport-content {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 32px;
-      max-width: 960px;
-      margin: 0 auto;
-      width: 100%;
-    }
+ .complete-action:hover {
+ background-color: rgba(255, 255, 255, 0.08);
+ }
 
-    /* Textbook Styling Card */
-    .content-card {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 32px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(12px);
-    }
+ .complete-action.completed {
+ background-color: rgba(16, 185, 129, 0.15);
+ border-color: var(--accent-green);
+ color: var(--accent-green);
+ }
 
-    .content-card h3 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 20px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+ .viewport-content {
+ flex-grow: 1;
+ overflow-y: auto;
+ padding: 40px;
+ display: flex;
+ flex-direction: column;
+ gap: 32px;
+ max-width: 960px;
+ margin: 0 auto;
+ width: 100%;
+ }
 
-    .content-card p {
-      font-size: 16px;
-      line-height: 1.6;
-      color: #d1d5db;
-      margin-bottom: 16px;
-    }
+ /* Textbook Styling Card */
+ .content-card {
+ background-color: var(--bg-card);
+ border: 1px solid var(--border-color);
+ border-radius: 12px;
+ padding: 32px;
+ box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+ backdrop-filter: blur(12px);
+ }
 
-    .content-card pre {
-      background-color: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 16px;
-      overflow-x: auto;
-      font-family: monospace;
-      font-size: 14px;
-      color: #38bdf8;
-      margin: 16px 0;
-    }
+ .content-card h3 {
+ font-family: 'Outfit', sans-serif;
+ font-size: 20px;
+ margin-bottom: 16px;
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ }
 
-    .content-card code {
-      font-family: monospace;
-      background-color: rgba(255, 255, 255, 0.08);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 14px;
-      color: #f472b6;
-    }
+ .content-card p {
+ font-size: 16px;
+ line-height: 1.6;
+ color: #d1d5db;
+ margin-bottom: 16px;
+ }
 
-    /* Quiz Widget UI */
-    .quiz-card {
-      border-left: 4px solid var(--accent-blue);
-    }
+  .content-card pre {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 14px;
+  color: #38bdf8;
+  margin: 16px 0;
+  }
 
-    .options-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 20px;
-    }
+ .content-card code {
+ font-family: monospace;
+ background-color: rgba(255, 255, 255, 0.08);
+ padding: 2px 6px;
+ border-radius: 4px;
+ font-size: 14px;
+ color: #f472b6;
+ }
 
-    .option-button {
-      padding: 16px;
-      background-color: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      color: var(--text-main);
-      text-align: left;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all var(--transition-speed) ease;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+ /* Quiz Widget UI */
+ .quiz-card {
+ border-left: 4px solid var(--accent-blue);
+ }
 
-    .option-button:hover {
-      background-color: rgba(255, 255, 255, 0.06);
-      border-color: var(--accent-blue);
-    }
+ .options-list {
+ display: flex;
+ flex-direction: column;
+ gap: 12px;
+ margin-top: 20px;
+ }
 
-    .option-badge {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
+ .option-button {
+ padding: 16px;
+ background-color: rgba(255, 255, 255, 0.03);
+ border: 1px solid var(--border-color);
+ border-radius: 8px;
+ color: var(--text-main);
+ text-align: left;
+ font-size: 14px;
+ cursor: pointer;
+ transition: all var(--transition-speed) ease;
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ }
 
-    .option-button.correct {
-      background-color: rgba(16, 185, 129, 0.1);
-      border-color: var(--accent-green);
-      color: var(--accent-green);
-    }
+ .option-button:hover {
+ background-color: rgba(255, 255, 255, 0.06);
+ border-color: var(--accent-blue);
+ }
 
-    .option-button.correct .option-badge {
-      background-color: var(--accent-green);
-      color: #fff;
-    }
+ .option-badge {
+ width: 24px;
+ height: 24px;
+ border-radius: 50%;
+ background-color: rgba(255, 255, 255, 0.08);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 12px;
+ font-weight: 600;
+ flex-shrink: 0;
+ }
 
-    .option-button.incorrect {
-      background-color: rgba(239, 68, 68, 0.1);
-      border-color: var(--accent-red);
-      color: var(--accent-red);
-    }
+ .option-button.correct {
+ background-color: rgba(16, 185, 129, 0.1);
+ border-color: var(--accent-green);
+ color: var(--accent-green);
+ }
 
-    .option-button.incorrect .option-badge {
-      background-color: var(--accent-red);
-      color: #fff;
-    }
+ .option-button.correct .option-badge {
+ background-color: var(--accent-green);
+ color: #fff;
+ }
 
-    .feedback-box {
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 8px;
-      background-color: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--border-color);
-      display: none;
-    }
+ .option-button.incorrect {
+ background-color: rgba(239, 68, 68, 0.1);
+ border-color: var(--accent-red);
+ color: var(--accent-red);
+ }
 
-    .feedback-box h4 {
-      font-family: 'Outfit', sans-serif;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+ .option-button.incorrect .option-badge {
+ background-color: var(--accent-red);
+ color: #fff;
+ }
 
-    .feedback-box p {
-      font-size: 14px;
-      color: #9ca3af;
-      margin-bottom: 0;
-      line-height: 1.5;
-    }
+ .feedback-box {
+ margin-top: 20px;
+ padding: 20px;
+ border-radius: 8px;
+ background-color: rgba(0, 0, 0, 0.3);
+ border: 1px solid var(--border-color);
+ display: none;
+ }
 
-    .dashboard-link {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px;
-      background: var(--gradient-main);
-      color: #fff;
-      text-decoration: none;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 600;
-      border-radius: 8px;
-      margin: 16px 24px;
-      text-align: center;
-      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
-      transition: opacity var(--transition-speed);
-    }
+ .feedback-box h4 {
+ font-family: 'Outfit', sans-serif;
+ margin-bottom: 8px;
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ }
 
-    .dashboard-link:hover {
-      opacity: 0.9;
-    }
+ .feedback-box p {
+ font-size: 14px;
+ color: #9ca3af;
+ margin-bottom: 0;
+ line-height: 1.5;
+ }
 
-    /* Scrollbars */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--border-color);
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
+ .dashboard-link {
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ gap: 8px;
+ padding: 12px;
+ background: var(--gradient-main);
+ color: #fff;
+ text-decoration: none;
+ font-family: 'Outfit', sans-serif;
+ font-weight: 600;
+ border-radius: 8px;
+ margin: 16px 24px;
+ text-align: center;
+ box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+ transition: opacity var(--transition-speed);
+ }
+
+ .dashboard-link:hover {
+ opacity: 0.9;
+ }
+
+ /* Scrollbars */
+ ::-webkit-scrollbar {
+ width: 6px;
+ }
+ ::-webkit-scrollbar-track {
+ background: transparent;
+ }
+ ::-webkit-scrollbar-thumb {
+ background: var(--border-color);
+ border-radius: 3px;
+ }
+ ::-webkit-scrollbar-thumb:hover {
+ background: rgba(255, 255, 255, 0.2);
+ }
+
+  /* Sidebar overlay backdrop for mobile */
+  .sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity var(--transition-speed) ease;
+  pointer-events: none;
+  }
+  .sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+  }
+
+  /* Responsive screen adjustments */
+  @media (max-width: 1024px) {
+  .viewport-header {
+  padding: 20px 24px;
+  }
+  .viewport-content {
+  padding: 24px;
+  }
+  }
+
+  @media (max-width: 768px) {
+  .sidebar {
+  position: fixed;
+  z-index: 1001;
+  height: 100%;
+  box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5);
+  }
+  .viewport-header {
+  padding: 16px 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+  }
+  .viewport-content {
+  padding: 20px 16px;
+  gap: 24px;
+  }
+  .content-card {
+  padding: 20px;
+  }
+  .complete-action {
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+  margin-left: 0;
+  }
+  }
+
+  /* Chat Widget Bubble Floating Button */
+  .chat-bubble-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--accent-purple);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.3);
+  z-index: 1000;
+  transition: transform var(--transition-speed) ease, background-color var(--transition-speed) ease;
+  }
+
+  .chat-bubble-btn:hover {
+  transform: scale(1.05);
+  background-color: var(--accent-purple-hover);
+  }
+
+   .bubble-logo-svg {
+   width: 32px;
+   height: 32px;
+   }
+
+  .bubble-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: var(--accent-red);
+  border: 2px solid var(--accent-purple);
+  }
+
+  /* Chat Container Card */
+  .chat-container-card {
+  position: fixed;
+  bottom: 6.5rem;
+  right: 2rem;
+  width: 380px;
+  height: 520px;
+  background-color: #0c0c0b;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  border-radius: 12px;
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .chat-header {
+  background-color: var(--bg-sidebar);
+  color: var(--text-main);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  }
+
+  .chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  }
+
+  .chat-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  }
+
+  .chat-header h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  }
+
+  .chat-status-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  }
+
+  .chat-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity var(--transition-speed) ease;
+  }
+
+  .chat-close-btn:hover {
+  opacity: 1;
+  }
+
+  .chat-messages-body {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: #090d16;
+  }
+
+  /* Messages styling */
+  .chat-message {
+  max-width: 85%;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  word-wrap: break-word;
+  }
+
+  .message-assistant {
+  background-color: #101524;
+  color: var(--text-main);
+  align-self: flex-start;
+  border-top-left-radius: 2px;
+  border: 1px solid var(--border-color);
+  }
+
+  .message-user {
+  background-color: var(--accent-purple);
+  color: #FFFFFF;
+  align-self: flex-end;
+  border-top-right-radius: 2px;
+  }
+
+  .chat-status-indicator {
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  background-color: #0c0c0b;
+  }
+
+  .status-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--accent-purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  }
+
+  /* Chat Input Form */
+  .chat-input-area {
+  display: flex;
+  border-top: 1px solid var(--border-color);
+  background-color: #0c0c0b;
+  padding: 0.5rem;
+  align-items: center;
+  }
+
+  .chat-input-area input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: transparent;
+  color: var(--text-main);
+  }
+
+  .chat-input-area input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  }
+
+  .chat-send-btn {
+  background-color: var(--accent-purple);
+  color: #FFFFFF;
+  border: none;
+  outline: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease;
+  flex-shrink: 0;
+  }
+
+  .chat-send-btn:hover {
+  background-color: var(--accent-purple-hover);
+  }
+
+  .send-icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent #ffffff;
+  display: inline-block;
+  margin-left: 2px;
+  }
+
+  .hidden {
+  display: none !important;
+  }
+
+  @keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes spin {
+  to { transform: rotate(360deg); }
+  }
+
+  /* Adjustments for mobile viewports */
+  @media (max-width: 480px) {
+  .chat-container-card {
+  width: 100vw;
+  height: 100vh;
+  bottom: 0;
+  right: 0;
+  border-radius: 0;
+  border: none;
+  }
+  }
   </style>
 </head>
 <body>
+  <!-- Sidebar Overlay for Mobile -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-  <!-- Navigation Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="logo-container">
-        <div class="logo-icon">S</div>
-        <div class="logo-text">Syncro Academy</div>
-      </div>
-      <div class="progress-wrapper">
-        <div class="progress-header">
-          <span>YOUR PROGRESS</span>
-          <span id="progress-percent">0%</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="progress-bar"></div>
-        </div>
-      </div>
-    </div>
+ <!-- Navigation Sidebar -->
+ <aside class="sidebar">
+ <div class="sidebar-header">
+ <div class="logo-container">
+ <div class="logo-icon">S</div>
+ <div class="logo-text">Syncro Academy</div>
+ </div>
+ <div class="progress-wrapper">
+ <div class="progress-header">
+ <span>YOUR PROGRESS</span>
+ <span id="progress-percent">0%</span>
+ </div>
+ <div class="progress-bar-bg">
+ <div class="progress-bar-fill"id="progress-bar"></div>
+ </div>
+ </div>
+ </div>
 
-    <div class="sidebar-content" id="sidebar-nav">
-      <!-- Syllabus content populated dynamically -->
-    </div>
+ <div class="sidebar-content"id="sidebar-nav">
+ <!-- Syllabus content populated dynamically -->
+ </div>
 
-    <a href="/dashboard.html" class="dashboard-link">
-      ⚙️ Back to Dashboard
-    </a>
-  </aside>
+ <a href="/dashboard.html"class="dashboard-link">
+ ️ Back to Dashboard
+ </a>
+ </aside>
 
-  <!-- Reading Viewport -->
-  <main class="main-viewport">
-    <header class="viewport-header">
-      <div class="header-info">
-        <span class="module-subtitle" id="current-module-title">MODULE 1</span>
-        <h1 class="lesson-main-title" id="current-lesson-title">Select a Lesson</h1>
-      </div>
-      <button class="complete-action" id="mark-complete-btn" onclick="toggleLessonComplete()">
-        <span id="complete-btn-icon">○</span> <span id="complete-btn-text">Mark Completed</span>
-      </button>
-    </header>
+ <!-- Reading Viewport -->
+ <main class="main-viewport">
+  <header class="viewport-header">
+  <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle navigation sidebar">
+    <svg class="toggle-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="9" y1="3" x2="9" y2="21"></line>
+    </svg>
+  </button>
+  <div class="header-info">
+ <span class="module-subtitle"id="current-module-title">MODULE 1</span>
+ <h1 class="lesson-main-title"id="current-lesson-title">Select a Lesson</h1>
+ </div>
+ <button class="complete-action"id="mark-complete-btn"onclick="toggleLessonComplete()">
+ <span id="complete-btn-icon">○</span><span id="complete-btn-text">Mark Completed</span>
+ </button>
+ </header>
 
-    <div class="viewport-content" id="lesson-content-pane">
-      
-      <!-- Lecture Card -->
-      <section class="content-card">
-        <h3>📖 Course Lecture</h3>
-        <div id="lecture-text">
-          <p>Please select a lesson from the sidebar menu to begin learning about your agency operations, sales strategies, and delivery setups.</p>
-        </div>
-      </section>
+ <div class="viewport-content"id="lesson-content-pane">
+ 
+ <!-- Lecture Card -->
+ <section class="content-card">
+ <h3>Course Lecture</h3>
+ <div id="lecture-text">
+ <p>Please select a lesson from the sidebar menu to begin learning about your agency operations, sales strategies, and delivery setups.</p>
+ </div>
+ </section>
 
-      <!-- Exercise Card -->
-      <section class="content-card" style="border-left: 4px solid var(--accent-purple);" id="exercise-section">
-        <h3>⚡ Real-World Exercise</h3>
-        <div id="exercise-text">
-          <p>Practical exercise instructions will be displayed here.</p>
-        </div>
-      </section>
+ <!-- Exercise Card -->
+ <section class="content-card"style="border-left: 4px solid var(--accent-purple);"id="exercise-section">
+ <h3>Real-World Exercise</h3>
+ <div id="exercise-text">
+ <p>Practical exercise instructions will be displayed here.</p>
+ </div>
+ </section>
 
-      <!-- Quiz Card -->
-      <section class="content-card quiz-card" id="quiz-section">
-        <h3>❓ Quiz & Knowledge Check</h3>
-        <div id="quiz-questions-container">
-          <!-- Populated dynamically -->
-        </div>
-        <div class="quiz-score-container" id="quiz-score-container" style="display: none; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-weight: 600; font-size: 16px;">Cumulative Score:</span>
-          <span id="quiz-score-display" style="font-weight: 700; font-size: 18px; color: var(--accent-purple);">0 / 5 Correct</span>
-        </div>
-      </section>
+ <!-- Quiz Card -->
+ <section class="content-card quiz-card"id="quiz-section">
+ <h3>Quiz & Knowledge Check</h3>
+ <div id="quiz-questions-container">
+ <!-- Populated dynamically -->
+ </div>
+ <div class="quiz-score-container"id="quiz-score-container"style="display: none; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+ <span style="font-weight: 600; font-size: 16px;">Cumulative Score:</span>
+ <span id="quiz-score-display"style="font-weight: 700; font-size: 18px; color: var(--accent-purple);">0 / 5 Correct</span>
+ </div>
+ </section>
 
-    </div>
-  </main>
+ </div>
+ </main>
 
-  <script src="/lessons.js"></script>
-  <script>
-    let activeLessonId = "1.1";
-    let completedLessons = JSON.parse(localStorage.getItem('completed_lessons') || '{}');
+<script src="/lessons.js"></script>
+ <script>
+ let activeLessonId = "1.1";
+ let completedLessons = JSON.parse(localStorage.getItem('completed_lessons') || '{}');
 
-    // Initialize Layout
-    function init() {
-      renderSidebar();
-      loadLesson(activeLessonId);
-      updateProgressBar();
-    }
+   // Initialize Layout
+   function init() {
+     const isMobile = window.innerWidth <= 768;
+     const localVal = localStorage.getItem('academy_sidebar_collapsed');
+     const isCollapsed = localVal !== null ? localVal === 'true' : isMobile;
+     const sidebar = document.querySelector('.sidebar');
+     if (isCollapsed) {
+       sidebar.classList.add('collapsed');
+     } else {
+       sidebar.classList.remove('collapsed');
+       if (isMobile) {
+         document.getElementById('sidebar-overlay').classList.add('active');
+       }
+     }
+     renderSidebar();
+     loadLesson(activeLessonId);
+     updateProgressBar();
+     initChat();
+   }
 
-    // Render Navigation
-    function renderSidebar() {
-      const navContainer = document.getElementById('sidebar-nav');
-      navContainer.innerHTML = '';
-
-      COURSE_SYLLABUS.forEach(module => {
-        const group = document.createElement('div');
-        group.className = 'module-group';
-
-        const title = document.createElement('div');
-        title.className = 'module-title';
-        title.innerText = module.title;
-        group.appendChild(title);
-
-        module.lessons.forEach(lesson => {
-          const item = document.createElement('div');
-          item.className = 'lesson-item';
-          if (lesson.id === activeLessonId) item.classList.add('active');
-          if (completedLessons[lesson.id]) item.classList.add('completed');
-
-          item.onclick = () => loadLesson(lesson.id);
-
-          const checkbox = document.createElement('span');
-          checkbox.className = 'lesson-checkbox';
-          checkbox.innerHTML = '✓';
-          item.appendChild(checkbox);
-
-          const name = document.createElement('span');
-          name.innerText = lesson.title.substring(4); // Remove prefixing digits
-          item.appendChild(name);
-
-          group.appendChild(item);
-        });
-
-        navContainer.appendChild(group);
-      });
-    }
-
-    // Load selected Lesson contents
-    function loadLesson(id) {
-      activeLessonId = id;
-      
-      // Update UI selection
-      document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
-      renderSidebar(); // Redraws and highlights correctly
-      
-      // Load Lecture & Exercise
-      document.getElementById('lecture-text').innerHTML = '<p>Loading lesson content...</p>';
-      document.getElementById('exercise-text').innerHTML = '<p>Loading exercise content...</p>';
-      document.getElementById('quiz-section').style.display = 'none';
-
-      // Load Button states
-      const completeBtn = document.getElementById('mark-complete-btn');
-      const completeIcon = document.getElementById('complete-btn-icon');
-      const completeText = document.getElementById('complete-btn-text');
-
-      if (completedLessons[id]) {
-        completeBtn.classList.add('completed');
-        completeIcon.innerText = '✓';
-        completeText.innerText = 'Completed';
+  function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('collapsed');
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    localStorage.setItem('academy_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+    
+    const overlay = document.getElementById('sidebar-overlay');
+    if (window.innerWidth <= 768) {
+      if (isCollapsed) {
+        overlay.classList.remove('active');
       } else {
-        completeBtn.classList.remove('completed');
-        completeIcon.innerText = '○';
-        completeText.innerText = 'Mark Completed';
+        overlay.classList.add('active');
       }
+    } else {
+      overlay.classList.remove('active');
+    }
+  }
 
-      fetch(`/lessons/${id}.json`)
-        .then(response => {
-          if (!response.ok) throw new Error('Lesson not found');
-          return response.json();
-        })
-        .then(lesson => {
-          // Map module title
-          let moduleNum = id.split('.')[0];
-          document.getElementById('current-module-title').innerText = `MODULE ${moduleNum}`;
-          document.getElementById('current-lesson-title').innerText = lesson.title;
+ // Render Navigation
+ function renderSidebar() {
+ const navContainer = document.getElementById('sidebar-nav');
+ navContainer.innerHTML = '';
 
-          // Load Lecture & Exercise
-          document.getElementById('lecture-text').innerHTML = lesson.lecture;
-          document.getElementById('exercise-text').innerHTML = lesson.exercise;
+ COURSE_SYLLABUS.forEach(module =>{
+ const group = document.createElement('div');
+ group.className = 'module-group';
 
-          // Load Quizzes
-          const quizzes = lesson.quizzes;
-          const quizContainer = document.getElementById('quiz-questions-container');
-          const scoreContainer = document.getElementById('quiz-score-container');
-          const scoreDisplay = document.getElementById('quiz-score-display');
+ const title = document.createElement('div');
+ title.className = 'module-title';
+ title.innerText = module.title;
+ group.appendChild(title);
+
+ module.lessons.forEach(lesson =>{
+ const item = document.createElement('div');
+ item.className = 'lesson-item';
+ if (lesson.id === activeLessonId) item.classList.add('active');
+ if (completedLessons[lesson.id]) item.classList.add('completed');
+
+ item.onclick = () =>loadLesson(lesson.id);
+
+ const checkbox = document.createElement('span');
+ checkbox.className = 'lesson-checkbox';
+ checkbox.innerHTML = '';
+ item.appendChild(checkbox);
+
+ const name = document.createElement('span');
+ name.innerText = lesson.title.substring(4); // Remove prefixing digits
+ item.appendChild(name);
+
+ group.appendChild(item);
+ });
+
+ navContainer.appendChild(group);
+ });
+ }
+
+ // Load selected Lesson contents
+  function loadLesson(id) {
+    activeLessonId = id;
+    
+    if (window.innerWidth <= 768) {
+      const sidebar = document.querySelector('.sidebar');
+      if (!sidebar.classList.contains('collapsed')) {
+        toggleSidebar();
+      }
+    }
+ 
+ // Update UI selection
+ document.querySelectorAll('.lesson-item').forEach(el =>el.classList.remove('active'));
+ renderSidebar(); // Redraws and highlights correctly
+ 
+ // Load Lecture & Exercise
+ document.getElementById('lecture-text').innerHTML = '<p>Loading lesson content...</p>';
+ document.getElementById('exercise-text').innerHTML = '<p>Loading exercise content...</p>';
+ document.getElementById('quiz-section').style.display = 'none';
+
+ // Load Button states
+ const completeBtn = document.getElementById('mark-complete-btn');
+ const completeIcon = document.getElementById('complete-btn-icon');
+ const completeText = document.getElementById('complete-btn-text');
+
+ if (completedLessons[id]) {
+ completeBtn.classList.add('completed');
+ completeIcon.innerText = '';
+ completeText.innerText = 'Completed';
+ } else {
+ completeBtn.classList.remove('completed');
+ completeIcon.innerText = '○';
+ completeText.innerText = 'Mark Completed';
+ }
+
+ fetch(`/lessons/${id}.json`)
+ .then(response =>{
+ if (!response.ok) throw new Error('Lesson not found');
+ return response.json();
+ })
+ .then(lesson =>{
+ // Map module title
+ let moduleNum = id.split('.')[0];
+ document.getElementById('current-module-title').innerText = `MODULE ${moduleNum}`;
+ document.getElementById('current-lesson-title').innerText = lesson.title;
+
+ // Load Lecture & Exercise
+ document.getElementById('lecture-text').innerHTML = lesson.lecture;
+ document.getElementById('exercise-text').innerHTML = lesson.exercise;
+
+ // Load Quizzes
+ const quizzes = lesson.quizzes;
+ const quizContainer = document.getElementById('quiz-questions-container');
+ const scoreContainer = document.getElementById('quiz-score-container');
+ const scoreDisplay = document.getElementById('quiz-score-display');
+ 
+ quizContainer.innerHTML = '';
+ 
+ if (quizzes && quizzes.length >0) {
+ document.getElementById('quiz-section').style.display = 'block';
+ scoreContainer.style.display = 'flex';
+ 
+ let answersState = Array(quizzes.length).fill(null); // records selected answer indices
+ let isCorrectState = Array(quizzes.length).fill(false); // records if correct
+ 
+ function updateScore() {
+ let answeredCount = answersState.filter(a =>a !== null).length;
+ let correctCount = isCorrectState.filter(c =>c === true).length;
+ scoreDisplay.innerText = `${correctCount} / ${quizzes.length} Correct${answeredCount === quizzes.length ? '(Completed)': ''}`;
+ }
+ 
+ updateScore();
+ 
+ quizzes.forEach((quiz, qIndex) =>{
+ const qWrapper = document.createElement('div');
+ qWrapper.style.marginBottom = '32px';
+ qWrapper.style.paddingBottom = '24px';
+ if (qIndex < quizzes.length - 1) {
+ qWrapper.style.borderBottom = '1px dashed var(--border-color)';
+ }
+ 
+ const qTitle = document.createElement('p');
+ qTitle.style.fontWeight = '600';
+ qTitle.style.marginBottom = '12px';
+ qTitle.style.fontSize = '15px';
+ qTitle.innerHTML = `<strong>Q${qIndex + 1}:</strong>${quiz.question}`;
+ qWrapper.appendChild(qTitle);
+ 
+ const optsList = document.createElement('div');
+ optsList.className = 'options-list';
+ optsList.style.marginTop = '12px';
+ 
+ const letterBadges = ['A', 'B', 'C', 'D', 'E'];
+ const optButtons = [];
+ 
+ const feedbackBox = document.createElement('div');
+ feedbackBox.className = 'feedback-box';
+ feedbackBox.style.marginTop = '16px';
+ 
+ const feedbackTitle = document.createElement('h4');
+ const feedbackText = document.createElement('p');
+ feedbackBox.appendChild(feedbackTitle);
+ feedbackBox.appendChild(feedbackText);
+ 
+ quiz.options.forEach((option, oIndex) =>{
+ const btn = document.createElement('button');
+ btn.className = 'option-button';
+ 
+ const badge = document.createElement('span');
+ badge.className = 'option-badge';
+ btn.appendChild(badge);
+ badge.innerText = letterBadges[oIndex];
+ 
+ const txt = document.createElement('span');
+ txt.innerText = option;
+ btn.appendChild(txt);
+ 
+ btn.onclick = () =>{
+ // Lock other options
+ optButtons.forEach(b =>b.onclick = null);
+ 
+ answersState[qIndex] = oIndex;
+ if (oIndex === quiz.answer) {
+ btn.classList.add('correct');
+ feedbackTitle.innerText = 'Correct!';
+ feedbackTitle.style.color = 'var(--accent-green)';
+ isCorrectState[qIndex] = true;
+ } else {
+ btn.classList.add('incorrect');
+ optButtons[quiz.answer].classList.add('correct');
+ feedbackTitle.innerText = 'Incorrect';
+ feedbackTitle.style.color = 'var(--accent-red)';
+ isCorrectState[qIndex] = false;
+ }
+ 
+ feedbackText.innerHTML = quiz.explanation;
+ feedbackBox.style.display = 'block';
+ updateScore();
+ };
+ 
+ optButtons.push(btn);
+ optsList.appendChild(btn);
+ });
+ 
+ qWrapper.appendChild(optsList);
+ qWrapper.appendChild(feedbackBox);
+ quizContainer.appendChild(qWrapper);
+ });
+ } else {
+ document.getElementById('quiz-section').style.display = 'none';
+ scoreContainer.style.display = 'none';
+ }
+ })
+ .catch(err =>{
+ console.error('Error loading lesson:', err);
+ document.getElementById('lecture-text').innerHTML = `<p style="color: var(--accent-red); padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: rgba(239, 68, 68, 0.05);">Error loading lesson details: ${err.message}</p>`;
+ document.getElementById('exercise-text').innerHTML = `<p>Failed to retrieve the practical guidelines for this chapter.</p>`;
+ });
+ }
+
+ // Toggle lesson completion state
+ function toggleLessonComplete() {
+ if (completedLessons[activeLessonId]) {
+ delete completedLessons[activeLessonId];
+ } else {
+ completedLessons[activeLessonId] = true;
+ }
+ localStorage.setItem('completed_lessons', JSON.stringify(completedLessons));
+ 
+ loadLesson(activeLessonId);
+ updateProgressBar();
+ }
+
+ // Calculate progress percentage
+ function updateProgressBar() {
+ let totalLessons = 0;
+ COURSE_SYLLABUS.forEach(m =>totalLessons += m.lessons.length);
+ 
+ let completedCount = Object.keys(completedLessons).length;
+ let percent = totalLessons >0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+ document.getElementById('progress-percent').innerText = `${percent}%`;
+ document.getElementById('progress-bar').style.width = `${percent}%`;
+ }
+
+ // Load initial state
+ window.onload = init;
+
+ // --- Floating Academy Chat Tutoring Widget ---
+  let chatWs = null;
+  let chatBubble = null;
+  let chatContainer = null;
+  let chatClose = null;
+  let chatForm = null;
+  let chatInput = null;
+  let chatMessages = null;
+  let chatStatus = null;
+  let chatStatusText = null;
+
+  const appendChatMessage = (sender, text) => {
+    if (!chatMessages) return;
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('chat-message', 'message-' + sender);
+    msgDiv.textContent = text;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  };
+
+  const connectChatWebSocket = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/chat-stream?clientId=academy`;
+    
+    console.log(`Connecting Academy tutor chat WebSocket to ${wsUrl}`);
+    chatWs = new WebSocket(wsUrl);
+
+    chatWs.onopen = () => {
+      console.log('Academy tutor chat WebSocket connected.');
+      if (chatMessages) chatMessages.innerHTML = ''; // Clear prior chat history on reconnect/connect
+    };
+
+    let currentAssistantMessageElement = null;
+
+    chatWs.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.event === 'text_chunk') {
+          if (chatStatus) chatStatus.classList.add('hidden'); // Hide thinking indicator when text streams
           
-          quizContainer.innerHTML = '';
-          
-          if (quizzes && quizzes.length > 0) {
-            document.getElementById('quiz-section').style.display = 'block';
-            scoreContainer.style.display = 'flex';
-            
-            let answersState = Array(quizzes.length).fill(null); // records selected answer indices
-            let isCorrectState = Array(quizzes.length).fill(false); // records if correct
-            
-            function updateScore() {
-              let answeredCount = answersState.filter(a => a !== null).length;
-              let correctCount = isCorrectState.filter(c => c === true).length;
-              scoreDisplay.innerText = `${correctCount} / ${quizzes.length} Correct${answeredCount === quizzes.length ? ' (Completed)' : ''}`;
-            }
-            
-            updateScore();
-            
-            quizzes.forEach((quiz, qIndex) => {
-              const qWrapper = document.createElement('div');
-              qWrapper.style.marginBottom = '32px';
-              qWrapper.style.paddingBottom = '24px';
-              if (qIndex < quizzes.length - 1) {
-                qWrapper.style.borderBottom = '1px dashed var(--border-color)';
-              }
-              
-              const qTitle = document.createElement('p');
-              qTitle.style.fontWeight = '600';
-              qTitle.style.marginBottom = '12px';
-              qTitle.style.fontSize = '15px';
-              qTitle.innerHTML = `<strong>Q${qIndex + 1}:</strong> ${quiz.question}`;
-              qWrapper.appendChild(qTitle);
-              
-              const optsList = document.createElement('div');
-              optsList.className = 'options-list';
-              optsList.style.marginTop = '12px';
-              
-              const letterBadges = ['A', 'B', 'C', 'D', 'E'];
-              const optButtons = [];
-              
-              const feedbackBox = document.createElement('div');
-              feedbackBox.className = 'feedback-box';
-              feedbackBox.style.marginTop = '16px';
-              
-              const feedbackTitle = document.createElement('h4');
-              const feedbackText = document.createElement('p');
-              feedbackBox.appendChild(feedbackTitle);
-              feedbackBox.appendChild(feedbackText);
-              
-              quiz.options.forEach((option, oIndex) => {
-                const btn = document.createElement('button');
-                btn.className = 'option-button';
-                
-                const badge = document.createElement('span');
-                badge.className = 'option-badge';
-                btn.appendChild(badge);
-                badge.innerText = letterBadges[oIndex];
-                
-                const txt = document.createElement('span');
-                txt.innerText = option;
-                btn.appendChild(txt);
-                
-                btn.onclick = () => {
-                  // Lock other options
-                  optButtons.forEach(b => b.onclick = null);
-                  
-                  answersState[qIndex] = oIndex;
-                  if (oIndex === quiz.answer) {
-                    btn.classList.add('correct');
-                    feedbackTitle.innerText = '✅ Correct!';
-                    feedbackTitle.style.color = 'var(--accent-green)';
-                    isCorrectState[qIndex] = true;
-                  } else {
-                    btn.classList.add('incorrect');
-                    optButtons[quiz.answer].classList.add('correct');
-                    feedbackTitle.innerText = '❌ Incorrect';
-                    feedbackTitle.style.color = 'var(--accent-red)';
-                    isCorrectState[qIndex] = false;
-                  }
-                  
-                  feedbackText.innerHTML = quiz.explanation;
-                  feedbackBox.style.display = 'block';
-                  updateScore();
-                };
-                
-                optButtons.push(btn);
-                optsList.appendChild(btn);
-              });
-              
-              qWrapper.appendChild(optsList);
-              qWrapper.appendChild(feedbackBox);
-              quizContainer.appendChild(qWrapper);
-            });
-          } else {
-            document.getElementById('quiz-section').style.display = 'none';
-            scoreContainer.style.display = 'none';
+          if (!currentAssistantMessageElement) {
+            currentAssistantMessageElement = document.createElement('div');
+            currentAssistantMessageElement.classList.add('chat-message', 'message-assistant');
+            if (chatMessages) chatMessages.appendChild(currentAssistantMessageElement);
           }
-        })
-        .catch(err => {
-          console.error('Error loading lesson:', err);
-          document.getElementById('lecture-text').innerHTML = `<p style="color: var(--accent-red); padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: rgba(239, 68, 68, 0.05);">Error loading lesson details: ${err.message}</p>`;
-          document.getElementById('exercise-text').innerHTML = `<p>Failed to retrieve the practical guidelines for this chapter.</p>`;
-        });
-    }
-
-    // Toggle lesson completion state
-    function toggleLessonComplete() {
-      if (completedLessons[activeLessonId]) {
-        delete completedLessons[activeLessonId];
-      } else {
-        completedLessons[activeLessonId] = true;
+          currentAssistantMessageElement.textContent += data.text;
+          if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else if (data.event === 'status_update') {
+          if (chatStatus) chatStatus.classList.remove('hidden');
+          if (chatStatusText) chatStatusText.textContent = data.text;
+        } else if (data.event === 'response_done') {
+          currentAssistantMessageElement = null;
+          if (chatStatus) chatStatus.classList.add('hidden');
+        }
+      } catch (err) {
+        console.error('Error parsing WebSocket message:', err);
       }
-      localStorage.setItem('completed_lessons', JSON.stringify(completedLessons));
-      
-      loadLesson(activeLessonId);
-      updateProgressBar();
+    };
+
+    chatWs.onclose = () => {
+      console.log('Academy tutor chat WebSocket disconnected. Reconnecting in 3s...');
+      setTimeout(() => {
+        if (chatContainer && !chatContainer.classList.contains('hidden')) {
+          connectChatWebSocket();
+        }
+      }, 3000);
+    };
+
+    chatWs.onerror = (err) => {
+      console.error('Academy tutor chat WebSocket error:', err);
+    };
+  };
+
+  function initChat() {
+    chatBubble = document.getElementById('chat-widget-bubble');
+    chatContainer = document.getElementById('chat-widget-container');
+    chatClose = document.getElementById('chat-close-btn');
+    chatForm = document.getElementById('chat-input-form');
+    chatInput = document.getElementById('chat-user-input');
+    chatMessages = document.getElementById('chat-messages');
+    chatStatus = document.getElementById('chat-status-indicator');
+    chatStatusText = document.getElementById('chat-status-text');
+
+    if (chatBubble) {
+      chatBubble.onclick = () => {
+        chatContainer.classList.toggle('hidden');
+        if (!chatContainer.classList.contains('hidden')) {
+          if (chatInput) chatInput.focus();
+          if (!chatWs || chatWs.readyState !== WebSocket.OPEN) {
+            connectChatWebSocket();
+          }
+        }
+      };
     }
 
-    // Calculate progress percentage
-    function updateProgressBar() {
-      let totalLessons = 0;
-      COURSE_SYLLABUS.forEach(m => totalLessons += m.lessons.length);
-      
-      let completedCount = Object.keys(completedLessons).length;
-      let percent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-
-      document.getElementById('progress-percent').innerText = `${percent}%`;
-      document.getElementById('progress-bar').style.width = `${percent}%`;
+    if (chatClose) {
+      chatClose.onclick = () => {
+        chatContainer.classList.add('hidden');
+      };
     }
 
-    // Load initial state
-    window.onload = init;
-  </script>
+    if (chatForm) {
+      chatForm.onsubmit = (e) => {
+        e.preventDefault();
+        if (!chatInput) return;
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        appendChatMessage('user', text);
+        chatInput.value = '';
+
+        if (chatWs && chatWs.readyState === WebSocket.OPEN) {
+          chatWs.send(JSON.stringify({ event: 'user_message', text: text }));
+          if (chatStatus) chatStatus.classList.remove('hidden');
+          if (chatStatusText) chatStatusText.textContent = 'Thinking...';
+        } else {
+          appendChatMessage('assistant', 'Error: Connection lost. Reconnecting...');
+          connectChatWebSocket();
+        }
+      };
+    }
+  }
+ </script>
+
+ <!-- Chat Widget Floating Button -->
+ <div id="chat-widget-bubble" class="chat-bubble-btn">
+   <!-- Minimal infinity logo icon inside bubble, rotated 90 degrees vertically -->
+   <svg class="bubble-logo-svg" viewBox="0 0 100 100" fill="none">
+     <path transform="rotate(-90 50 50)" d="M 50,35 C 40,20 25,25 25,38 C 25,52 38,55 50,45 C 62,35 75,38 75,52 C 75,65 60,70 50,55" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none"/>
+   </svg>
+   <span class="bubble-badge animate-pulse hidden"></span>
+ </div>
+
+ <!-- Chat Widget Container (Styled to match dark glowing theme) -->
+ <div id="chat-widget-container" class="chat-container-card hidden">
+   <div class="chat-header">
+     <div class="chat-header-info">
+       <span class="chat-status-dot animate-pulse"></span>
+       <div>
+         <h4 id="chat-assistant-name">Syncro AI Specialist</h4>
+         <p class="chat-status-text">Smart Academy Tutor</p>
+       </div>
+     </div>
+     <button id="chat-close-btn" class="chat-close-btn">&times;</button>
+   </div>
+   
+   <div id="chat-messages" class="chat-messages-body">
+     <!-- Messages are injected here -->
+   </div>
+
+   <div id="chat-status-indicator" class="chat-status-indicator hidden">
+     <span class="status-spinner"></span><span id="chat-status-text">Thinking...</span>
+   </div>
+
+   <form id="chat-input-form" class="chat-input-area">
+     <input type="text" id="chat-user-input" placeholder="Ask a question about the curriculum..." autocomplete="off" required>
+     <button type="submit" id="chat-send-btn" class="chat-send-btn">
+       <span class="send-icon"></span>
+     </button>
+   </form>
+ </div>
 </body>
 </html>
-

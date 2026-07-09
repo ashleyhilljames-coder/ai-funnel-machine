@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import * as path from 'path';
 
 function inspectDatabase() {
-  const dbPath = path.join(__dirname, '../../agentic_nexus.db');
+  const dbPath = path.join(__dirname, '../../syncro_scale.db');
   console.log("=========================================================================");
   console.log(`🔍 [Agentic Nexus] Database Inspector Utility`);
   console.log(`📁 Target File: ${dbPath}`);

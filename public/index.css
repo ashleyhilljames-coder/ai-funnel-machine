@@ -1730,14 +1730,23 @@ body {
 .sandbox-terminal {
     background: #000000;
     border: 1px solid var(--border-dark);
-    font-family: 'Courier New', Courier, monospace;
     font-size: 0.85rem;
-    color: #00FF66; /* Classic terminal green */
     display: flex;
     flex-direction: column;
-    height: 250px;
+    height: 320px;
     border-radius: 6px;
     overflow: hidden;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .terminal-header {
@@ -1781,6 +1790,11 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+}
+
+#terminal-log {
+    font-family: 'Courier New', Courier, monospace;
+    color: #00FF66;
 }
 
 /* Console logs highlights */
