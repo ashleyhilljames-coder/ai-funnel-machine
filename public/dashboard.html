@@ -265,6 +265,48 @@
 
   <!-- Live Conversation Stream Tab Pane -->
   <div id="calls-tab" class="tab-pane">
+
+<!-- Live Emergency Dispatches Card -->
+<div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
+  <h3 style="margin-bottom: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+    <span>🚨</span> Live Emergency Dispatches
+  </h3>
+  
+  <div id="dispatch-container">
+    <p style="color: var(--text-secondary);">Loading live dispatches...</p>
+  </div>
+  <!-- Live Stream Interactive Panel -->
+      <div id="live-stream-panel" class="glass-card" style="padding: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+          <h3 style="font-weight: 700; color: #fff;">🎙️ Real-Time Audio & Interjection Stream</h3>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="stream-status" style="padding: 4px 12px; font-size: 12px; border-radius: 20px; background: rgba(255,255,255,0.1); color: #888;">Offline</span>
+            <button id="toggle-mic-btn" style="padding: 8px 16px; font-weight: 600; background: #06b6d4; color: #fff; border: none; border-radius: 8px; cursor: pointer;">
+              🎙️ Start Mic Stream
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Transcript Log Box -->
+        <div id="live-transcript-box" style="height: 220px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 13px; color: #ccc; margin-bottom: 15px;">
+          <p style="color: #666; font-style: italic;">Click "Start Mic Stream" to speak into your microphone and test the real-time dispatch stream...</p>
+        </div>
+
+        <!-- Mid-Call Interjection / Sales Note Input -->
+        <div style="display: flex; gap: 10px;">
+          <input 
+            type="text" 
+            id="interject-note-input" 
+            placeholder="Type mid-call instruction or note for agent (e.g., 'Offer 10% discount')..." 
+            style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 15px; border-radius: 8px; outline: none;"
+          />
+          <button id="send-interject-btn" style="padding: 10px 20px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
+            Inject Note
+          </button>
+        </div>
+      </div>
+</div>
+
     <!-- Live Telemetry Metrics Row -->
     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;">
       <div class="glass-card" style="padding: 15px; text-align: center;">

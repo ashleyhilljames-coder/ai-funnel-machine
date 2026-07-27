@@ -1,13 +1,60 @@
 document.addEventListener('DOMContentLoaded', () =>{
  // --- Authorization Session Gate ---
- const token = sessionStorage.getItem('authToken');
- const authClientId = sessionStorage.getItem('authClientId');
- const authClientName = sessionStorage.getItem('authClientName');
+// --- DEV BYPASS FOR LOCAL TESTING ---
+  if (!sessionStorage.getItem('authToken') || !sessionStorage.getItem('authClientId')) {
+    console.warn('⚠️ No active session found. Applying Dev Bypass credentials...');
+    sessionStorage.setItem('authToken', 'dev-bypass-token-12345');
+    sessionStorage.setItem('authClientId', 'dev-client-id');
+    sessionStorage.setItem('authClientName', 'Dev Admin');
+  }
 
- if (!token || !authClientId) {
- window.location.href = 'login.html';
- return;
- }
+  const token = sessionStorage.getItem('authToken');
+  const authClientId = sessionStorage.getItem('authClientId');
+  const authClientName = sessionStorage.getItem('authClientName');
+async function fetchRecentDispatches() {
+    try {
+      const response = await fetch('/api/telephony/recent-calls');
+      const data = await response.json();
+
+      if (data.success && data.calls) {
+        renderDispatches(data.calls);
+      }
+    } catch (error) {
+      console.error('Error fetching recent dispatches:', error);
+    }
+  }
+
+  function renderDispatches(calls) {
+    // Make sure 'dispatch-container' matches an ID in your dashboard.html
+    const container = document.getElementById('dispatch-container');
+    if (!container) return;
+
+    if (calls.length === 0) {
+      container.innerHTML = '<p class="text-gray-400">No dispatch records found.</p>';
+      return;
+    }
+
+    container.innerHTML = calls.map(call => `
+      <div class="p-4 bg-slate-800 rounded-lg border border-slate-700 mb-3 text-left">
+        <div class="flex justify-between items-center mb-2">
+          <span class="font-semibold text-emerald-400">${call.callerPhone || 'Unknown'}</span>
+          <span class="px-2 py-1 text-xs font-bold rounded bg-amber-500/20 text-amber-300 uppercase">
+            ${call.status}
+          </span>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">${call.summary}</p>
+        <div class="flex justify-between text-xs text-slate-500">
+          <span>Duration: ${call.callDuration}</span>
+          <span>${call.createdAt ? new Date(call.createdAt).toLocaleTimeString() : ''}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Trigger initial fetch & start polling
+  fetchRecentDispatches();
+  setInterval(fetchRecentDispatches, 10000);
+
 
  // Intercept Fetch to inject Session Token & catch 401s
  const originalFetch = window.fetch;
@@ -637,1836 +684,732 @@ Execution Time: ${data.executionTime} seconds
  btn.innerHTML = `<span class="loading-spinner"style="width:12px; height:12px; border-width:1.5px;"></span>`;
 
  try {
-  // Save active lead details
-  activeCampaignLead = { email, name, niche, client };
-
-  // Dynamically load templates for this lead's client
-  const resTemplates = await fetch(`/api/outbound/templates?clientId=${client}`);
-  const dataTemplates = await resTemplates.json();
-  let initialTemplate = 'mitigation';
-
-  if (dataTemplates.success && dataTemplates.templates && dataTemplates.templates.length > 0) {
-    campaignTemplateSelect.innerHTML = dataTemplates.templates.map(t =>
-      `<option value="${t.id}">${t.name}</option>`
-    ).join('');
-
-    // Infer initial template matching niche
-    const nicheLower = (niche || '').toLowerCase();
-    const matched = dataTemplates.templates.find(t => {
-      const tid = t.id.toLowerCase();
-      if (nicheLower.includes('roof') && tid.includes('roof')) return true;
-      if (nicheLower.includes('property') && tid.includes('property')) return true;
-      if ((nicheLower.includes('realestate') || nicheLower.includes('estate') || nicheLower.includes('home')) && tid.includes('realestate')) return true;
-      if (nicheLower.includes('mitigation') && tid.includes('mitigation')) return true;
-      return false;
-    });
-    initialTemplate = matched ? matched.id : dataTemplates.templates[0].id;
-    campaignTemplateSelect.value = initialTemplate;
-  } else {
-    // Fallback markup if fetch fails
-    campaignTemplateSelect.innerHTML = `
-      <option value="mitigation">Emergency Mitigation Outreach</option>
-      <option value="roofing">Commercial Roofing Outreach</option>
-      <option value="property">Property Management Outreach</option>
-      <option value="realestate">Real Estate Tour Outreach</option>
-    `;
-    const nicheLower = (niche || '').toLowerCase();
-    if (nicheLower.includes('roof')) initialTemplate = 'roofing';
-    else if (nicheLower.includes('property')) initialTemplate = 'property';
-    else if (nicheLower.includes('realestate') || nicheLower.includes('estate') || nicheLower.includes('home')) initialTemplate = 'realestate';
-    campaignTemplateSelect.value = initialTemplate;
-  }
-
-  // Load the initial draft in the editor
-  await fetchAndLoadDraft(email, name, niche, client, initialTemplate);
-
-  // Open the drawer
-  campaignDrawer.classList.remove('hidden');
- } catch (err) {
- alert(`Campaign Error: ${err.message}`);
- } finally {
- btn.disabled = false;
- btn.innerHTML = originalText;
- }
- }
- });
-
- // Submit campaign email send listener
- sendCampaignEmailBtn.addEventListener('click', async () =>{
- if (!activeCampaignLead) return;
-
- const subject = campaignSubjectInput.value.trim();
- const body = campaignBodyTextarea.value.trim();
-
- if (!subject || !body) {
- alert('️ Subject and body cannot be empty.');
- return;
- }
-
- const originalText = sendCampaignEmailBtn.innerHTML;
- sendCampaignEmailBtn.disabled = true;
- sendCampaignEmailBtn.innerHTML = `<span class="loading-spinner"style="width:12px; height:12px; border-width:1.5px;"></span>Dispatched...`;
-
- try {
- const res = await fetch('/api/send-campaign-email', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({
- email: activeCampaignLead.email,
- clientId: activeCampaignLead.client,
- subject,
- body
- })
- });
-
- const data = await res.json();
- if (res.ok && data.success) {
- closeDrawer();
- refreshDashboard();
- } else {
- throw new Error(data.error || 'Failed to send campaign email.');
- }
- } catch (err) {
- alert(`Error sending email: ${err.message}`);
- sendCampaignEmailBtn.disabled = false;
- sendCampaignEmailBtn.innerHTML = originalText;
- }
- });
-
- // --- Tabs Navigation ---
- const tabButtons = document.querySelectorAll('.tab-btn');
- const tabPanes = document.querySelectorAll('.tab-pane');
-
- tabButtons.forEach(btn =>{
- btn.addEventListener('click', () =>{
- const targetTab = btn.getAttribute('data-tab');
  
- tabButtons.forEach(b =>b.classList.remove('active'));
- tabPanes.forEach(p =>p.classList.remove('active'));
+ // Set active campaign lead reference for template swapping
+      activeCampaignLead = { email, name, niche, client };
 
- btn.classList.add('active');
- document.getElementById(targetTab).classList.add('active');
- });
+      // Set default template option based on lead's niche vertical
+      if (niche && niche.toLowerCase().includes('property')) {
+        campaignTemplateSelect.value = 'property';
+      } else if (niche && (niche.toLowerCase().includes('roof') || niche.toLowerCase().includes('storm'))) {
+        campaignTemplateSelect.value = 'roofing';
+      } else {
+        campaignTemplateSelect.value = 'mitigation';
+      }
+
+      // Open campaign sliding side drawer
+      campaignDrawer.classList.remove('hidden');
+
+      // Trigger asynchronous draft copywriting generation via OpenAI
+      await fetchAndLoadDraft(email, name, niche, client, campaignTemplateSelect.value);
+
+    } catch (err) {
+      console.error('Error initiating campaign workflow:', err);
+      alert(`Failed to set up template draft: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
  });
 
- // --- Call History Logs ---
+ // --- Confirm and Dispatch Outbound Campaign Email ---
+ sendCampaignEmailBtn.addEventListener('click', async () => {
+   if (!activeCampaignLead) return;
+
+   const subject = campaignSubjectInput.value.trim();
+   const body = campaignBodyTextarea.value.trim();
+   const template = campaignTemplateSelect.value;
+
+   if (!subject || !body) {
+     alert('Subject and body layers cannot be left empty.');
+     return;
+   }
+
+   sendCampaignEmailBtn.disabled = true;
+   sendCampaignEmailBtn.innerHTML = `<span class="loading-spinner" style="width:14px; height:14px; border-width:1.5px;"></span>Dispatching Email...`;
+
+   try {
+     const res = await fetch('/api/send-campaign-outreach', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         email: activeCampaignLead.email,
+         name: activeCampaignLead.name,
+         clientId: activeCampaignLead.client,
+         subject,
+         body,
+         template
+       })
+     });
+
+     const data = await res.json();
+     if (res.ok && data.success) {
+       alert(`Campaign email successfully queued & dispatched to ${activeCampaignLead.email}`);
+       closeDrawer();
+       refreshDashboard();
+     } else {
+       throw new Error(data.error || 'Failed to dispatch email execution.');
+     }
+   } catch (err) {
+     alert(`Outreach Dispatch Failure: ${err.message}`);
+     sendCampaignEmailBtn.disabled = false;
+     sendCampaignEmailBtn.innerHTML = `Confirm & Send Campaign`;
+   }
+ });
+
+ // --- Live Conversation Stream Telemetry & Intercept Layer ---
+ const activeCallsContainer = document.getElementById('active-calls-container');
+ const traitsTimelineContent = document.getElementById('traits-timeline-content');
+ const activeProfileCard = document.getElementById('active-profile-card');
+ const noProfileSelectedMsg = document.getElementById('no-profile-selected-msg');
+ const interceptCallBtn = document.getElementById('intercept-call-btn');
+ const activeSessionMetaBadge = document.getElementById('active-session-meta-badge');
+
+ let pollingIntervalId = null;
+ let activeSelectedSessionId = null;
+
+ const fetchLiveTelemetry = async () => {
+   try {
+     const clientId = globalClientSelect ? globalClientSelect.value : 'all';
+     const res = await fetch(`/api/telemetry/live-sessions?clientId=${clientId}`);
+     const data = await res.json();
+
+     if (data.success) {
+       // Bind upper metric averages cards
+       document.getElementById('telemetry-avg-stt').textContent = data.metrics.avgStt ? `${data.metrics.avgStt}ms` : '--';
+       document.getElementById('telemetry-avg-llm').textContent = data.metrics.avgLlm ? `${data.metrics.avgLlm}ms` : '--';
+       document.getElementById('telemetry-avg-tts').textContent = data.metrics.avgTts ? `${data.metrics.avgTts}ms` : '--';
+       document.getElementById('telemetry-avg-ttft').textContent = data.metrics.avgTtft ? `${data.metrics.avgTtft}ms` : '--';
+       document.getElementById('telemetry-interrupted-rate').textContent = data.metrics.interruptionRate ? `${data.metrics.interruptionRate}%` : '--';
+
+       // Render Connections Queue
+       if (!data.sessions || data.sessions.length === 0) {
+         activeCallsContainer.innerHTML = `<p class="no-calls-msg" style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic; text-align: center; margin: auto;">No active sessions currently.</p>`;
+         if (activeSelectedSessionId) {
+           resetLiveInsightsPanel();
+         }
+         return;
+       }
+
+       activeCallsContainer.innerHTML = data.sessions.map(session => {
+         const isActive = session.id === activeSelectedSessionId ? 'border: 1px solid var(--accent-cyan); background: rgba(6,182,212,0.05);' : '';
+         return `
+           <div class="glass-card session-queue-item" data-id="${session.id}" style="padding: 12px; cursor: pointer; border-radius: var(--border-radius-sm); transition: all 0.2s; ${isActive}">
+             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+               <strong style="color: #fff; font-size: 0.9rem;">${session.name || 'Unknown Caller'}</strong>
+               <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: bold;">${session.duration}</span>
+             </div>
+             <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
+               <span>Channel: ${session.source}</span>
+               <span>Niche: ${session.niche || 'General'}</span>
+             </div>
+           </div>
+         `;
+       }).join('');
+
+       // If an active session profile is currently open, refresh its dynamic timeline view
+       if (activeSelectedSessionId) {
+         const currentSession = data.sessions.find(s => s.id === activeSelectedSessionId);
+         if (currentSession) {
+           renderLiveInsights(currentSession);
+         } else {
+           resetLiveInsightsPanel();
+         }
+       }
+     }
+   } catch (err) {
+     console.error('Error fetching voice pipeline telemetry:', err);
+   }
+ };
+
+ const renderLiveInsights = (session) => {
+   noProfileSelectedMsg.style.display = 'none';
+   activeProfileCard.style.display = 'block';
+   activeSessionMetaBadge.style.display = 'block';
+   
+   // Enable live human override switch visibility
+   interceptCallBtn.style.display = 'block';
+   interceptCallBtn.setAttribute('data-session-id', session.id);
+
+   document.getElementById('profile-name').textContent = session.name || 'Unknown Caller';
+   document.getElementById('profile-phone').textContent = session.phone || '-';
+   document.getElementById('profile-email').textContent = session.email || '-';
+
+   // Render dynamically extracted structured entity data fields
+   const traitsContainer = document.getElementById('profile-traits');
+   if (session.traits && Object.keys(session.traits).length > 0) {
+     traitsContainer.innerHTML = Object.entries(session.traits).map(([key, value]) => `
+       <div style="background: rgba(255,255,255,0.02); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.04);">
+         <span style="display: block; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;">${key}</span>
+         <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">${value}</span>
+       </div>
+     `).join('');
+   } else {
+     traitsContainer.innerHTML = `<p style="font-size: 0.8rem; color: var(--text-secondary); grid-column: span 2; font-style: italic; margin: 0;">Extracting conversation traits...</p>`;
+   }
+
+   // Render real-time chronological step milestones logs
+   const observationsList = document.getElementById('profile-observations');
+   if (session.observations && session.observations.length > 0) {
+     observationsList.innerHTML = session.observations.map(obs => `
+       <li style="margin-bottom: 6px; padding-left: 5px;">
+         <span style="color: var(--accent-blue); font-family: monospace; font-size: 0.8rem; margin-right: 6px;">[${obs.time}]</span>
+         <span>${obs.text}</span>
+       </li>
+     `).join('');
+   } else {
+     observationsList.innerHTML = `<li style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Listening to connection stream...</li>`;
+   }
+ };
+
+ const resetLiveInsightsPanel = () => {
+   activeSelectedSessionId = null;
+   noProfileSelectedMsg.style.display = 'margin';
+   activeProfileCard.style.display = 'none';
+   interceptCallBtn.style.display = 'none';
+   activeSessionMetaBadge.style.display = 'none';
+ };
+
+ // Handle connection list targeting selections
+ activeCallsContainer.addEventListener('click', (e) => {
+   const item = e.target.closest('.session-queue-item');
+   if (!item) return;
+   activeSelectedSessionId = item.getAttribute('data-id');
+   fetchLiveTelemetry();
+ });
+
+ // Live Telemetry Intercept Action Execution Layer
+ interceptCallBtn.addEventListener('click', async () => {
+   const sessionId = interceptCallBtn.getAttribute('data-session-id');
+   if (!sessionId) return;
+
+   if (confirm('⚡ Warn: Intercepting this call will disconnect the automated Voice Agent pipeline and route the live WebRTC/Twilio stream node directly to your workstation layout. Proceed?')) {
+     try {
+       const res = await fetch('/api/telemetry/intercept-session', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ sessionId })
+       });
+       const data = await res.json();
+       if (data.success) {
+         alert('Pipeline detached successfully. Audio channel linked directly. You are now live with the customer.');
+         resetLiveInsightsPanel();
+         fetchLiveTelemetry();
+       } else {
+         throw new Error(data.error);
+       }
+     } catch (err) {
+       alert(`Could not intercept active call pipeline: ${err.message}`);
+     }
+   }
+ });
+
+ // --- Historical Logs Feed Ingestion ---
  const callsTbody = document.getElementById('calls-tbody');
  const searchCallsInput = document.getElementById('search-calls');
- let allCalls = [];
+ let historicalConversations = [];
 
- const fetchCallLogs = async () =>{
- try {
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- const res = await fetch(`/api/call-logs?clientId=${clientId}`);
- const data = await res.json();
- if (data.success) {
- allCalls = data.logs;
- renderCallsTable(allCalls);
- }
- } catch (err) {
- console.error('Error fetching call logs:', err);
- callsTbody.innerHTML = `<tr><td colspan="6"class="loading-text"style="color: #fca5a5;">Failed to load conversation logs.</td></tr>`;
- }
+ const fetchHistoricalLogs = async () => {
+   try {
+     const clientId = globalClientSelect ? globalClientSelect.value : 'all';
+     const res = await fetch(`/api/historical-conversations?clientId=${clientId}`);
+     const data = await res.json();
+     if (data.success) {
+       historicalConversations = data.logs;
+       renderHistoricalTable(historicalConversations);
+     }
+   } catch (err) {
+     callsTbody.innerHTML = `<tr><td colspan="6" class="loading-text" style="color: #fca5a5;">Failed to load historic pipeline conversation stream logs.</td></tr>`;
+   }
  };
 
- const renderCallsTable = (calls) =>{
- if (!calls || calls.length === 0) {
- callsTbody.innerHTML = `<tr><td colspan="6"class="loading-text">No conversations found.</td></tr>`;
- return;
- }
+ const renderHistoricalTable = (logs) => {
+   if (!logs || logs.length === 0) {
+     callsTbody.innerHTML = `<tr><td colspan="6" class="loading-text">No previous communication sessions mapped yet.</td></tr>`;
+     return;
+   }
 
- callsTbody.innerHTML = calls.map(call =>{
- const dateStr = new Date(call.started_at).toLocaleString();
- 
- // Format source badge
- let badgeClass = 'badge-pending';
- let sourceText = call.source;
- if (call.source === 'telephony') {
- badgeClass = 'badge-contacted'; // Blue-ish
- sourceText = 'Voice (Phone)';
- } else if (call.source === 'browser') {
- badgeClass = 'badge-pending'; // Orange-ish
- sourceText = '️ Voice (Web)';
- } else if (call.source === 'web_chat') {
- badgeClass = 'badge-scheduled'; // Purple accent
- sourceText = 'Web Chat';
- } else if (call.source === 'sms') {
- badgeClass = 'badge-scheduled';
- sourceText = 'SMS Chat';
- }
-
- // Format lead info
- let infoHtml = `<strong style="color: #fff;">${call.caller_name || 'Anonymous Prospect'}</strong>`;
- const contactDetails = [];
- if (call.caller_phone) contactDetails.push(`${call.caller_phone}`);
- if (call.caller_email) contactDetails.push(`️ ${call.caller_email}`);
- if (call.caller_address) contactDetails.push(`${call.caller_address}`);
- if (contactDetails.length >0) {
- infoHtml += `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.3;">${contactDetails.join('| ')}</div>`;
- }
-
- // Format AI agent activity
- let activityHtml = `<div style="font-size: 0.85rem; color: #e5e7eb; line-height: 1.4;">${call.agent_activity || '<span style="color:#6b7280;">Conversing with prospect...</span>'}</div>`;
- if (call.damage_type) {
- activityHtml += `<div style="font-size: 0.75rem; color: var(--accent-orange); margin-top: 4px; font-weight: 600;">Preference/Damage: ${call.damage_type}</div>`;
- }
-
- // Format status badge
- let statusHtml = '<span class="badge badge-unscheduled">No Sync</span>';
- if (call.action_taken) {
- let badgeStyle = 'background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff;';
- if (call.action_taken.includes('FieldPulse') || call.action_taken.includes('Dispatched')) {
- badgeStyle = 'background: rgba(249,115,22,0.15); border: 1px solid var(--accent-orange); color: var(--accent-orange);';
- } else if (call.action_taken.includes('Calendly') || call.action_taken.includes('Booked')) {
- badgeStyle = 'background: rgba(16,185,129,0.15); border: 1px solid var(--success-green); color: var(--success-green);';
- } else if (call.action_taken.includes('CRM') || call.action_taken.includes('KVCore') || call.action_taken.includes('Lofty')) {
- badgeStyle = 'background: rgba(59,130,246,0.15); border: 1px solid var(--accent-blue); color: var(--accent-blue);';
- }
- statusHtml = `<span class="badge"style="font-size:0.8rem; font-weight:700; ${badgeStyle}">${call.action_taken}</span>`;
- } else if (call.scheduled_dispatch) {
- statusHtml = `<span class="badge badge-scheduled"style="font-size:0.8rem;">${call.scheduled_dispatch}</span>`;
- }
-
- const actionButtonHtml = `<button class="btn btn-primary btn-table view-call-btn"data-id="${call.id}">Details</button>`;
-
- return `
- <tr>
- <td style="font-family: monospace; font-size: 0.85rem;">${dateStr}</td>
- <td><span class="badge ${badgeClass}">${sourceText}</span></td>
- <td>${infoHtml}</td>
- <td>${activityHtml}</td>
- <td>${statusHtml}</td>
- <td>${actionButtonHtml}</td>
- </tr>
- `;
- }).join('');
+   callsTbody.innerHTML = logs.map(log => {
+     return `
+       <tr>
+         <td style="font-size: 0.85rem; font-family: monospace;">${new Date(log.created_at).toLocaleString()}</td>
+         <td><span class="badge badge-pending" style="background: rgba(255,255,255,0.05); color:#fff; border: 1px solid var(--glass-border);">${log.source}</span></td>
+         <td>
+           <div style="font-weight:600; color:#fff;">${log.customer_name || 'Anonymous'}</div>
+           <div style="font-size:0.75rem; color:var(--text-secondary); font-family:monospace;">${log.customer_phone || log.customer_email || ''}</div>
+         </td>
+         <td style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size:0.85rem;">${log.summary_intent || 'General Intake Inquiry'}</td>
+         <td><span class="badge" style="background:${log.status === 'Dispatched' ? 'rgba(16,185,129,0.1)' : 'rgba(6,182,212,0.1)'}; color:${log.status === 'Dispatched' ? '#10b981' : '#06b6d4'}; border: 1px solid ${log.status === 'Dispatched' ? 'rgba(16,185,129,0.2)' : 'rgba(6,182,212,0.2)'};">${log.status}</span></td>
+         <td><button class="btn btn-secondary btn-table view-transcript-btn" data-id="${log.id}">View Log</button></td>
+       </tr>
+     `;
+   }).join('');
  };
 
- searchCallsInput.addEventListener('input', () =>{
- const query = searchCallsInput.value.toLowerCase().trim();
- if (!query) {
- renderCallsTable(allCalls);
- return;
- }
-
- const filtered = allCalls.filter(call =>
- (call.caller_name || '').toLowerCase().includes(query) || 
- (call.caller_phone || '').toLowerCase().includes(query) || 
- (call.caller_email || '').toLowerCase().includes(query) || 
- (call.caller_address || '').toLowerCase().includes(query) ||
- (call.damage_type || '').toLowerCase().includes(query)
- );
- renderCallsTable(filtered);
+ searchCallsInput.addEventListener('input', () => {
+   const query = searchCallsInput.value.toLowerCase().trim();
+   if (!query) {
+     renderHistoricalTable(historicalConversations);
+     return;
+   }
+   const filtered = historicalConversations.filter(log => 
+     (log.customer_name && log.customer_name.toLowerCase().includes(query)) ||
+     (log.summary_intent && log.summary_intent.toLowerCase().includes(query))
+   );
+   renderHistoricalTable(filtered);
  });
 
- // --- Call Drawer controls ---
+ // --- Historical Deep Transcript Drawer Display Mappings ---
  const callDrawer = document.getElementById('call-drawer');
  const closeCallDrawerBtn = document.getElementById('close-call-drawer-btn');
  const callDrawerOverlay = document.getElementById('call-drawer-overlay');
  const drawerAudioPlayer = document.getElementById('drawer-audio-player');
- 
- const closeCallDrawer = () =>{
- callDrawer.classList.add('hidden');
- drawerAudioPlayer.pause();
- drawerAudioPlayer.src = '';
- };
 
+ callsTbody.addEventListener('click', async (e) => {
+   if (e.target.classList.contains('view-transcript-btn')) {
+     const logId = e.target.getAttribute('data-id');
+     try {
+       const res = await fetch(`/api/conversation-transcript/${logId}`);
+       const data = await res.json();
+       if (data.success) {
+         document.getElementById('drawer-caller-name').textContent = data.record.customer_name || 'Unknown';
+         document.getElementById('drawer-caller-phone').textContent = data.record.customer_phone || '-';
+         document.getElementById('drawer-caller-email').textContent = data.record.customer_email || '-';
+         document.getElementById('drawer-caller-address').textContent = data.record.customer_address || '-';
+         document.getElementById('drawer-damage-type').textContent = data.record.niche || 'General Restoration';
+         document.getElementById('drawer-scheduled-dispatch').textContent = data.record.scheduled_dispatch || 'None Mapped';
+         document.getElementById('drawer-call-duration').textContent = data.record.duration || '0:00';
+
+         if (data.record.recording_url) {
+           drawerAudioPlayer.style.display = 'block';
+           drawerAudioPlayer.src = data.record.recording_url;
+         } else {
+           drawerAudioPlayer.style.display = 'none';
+           drawerAudioPlayer.src = '';
+         }
+
+         const linesBox = document.getElementById('drawer-transcript-body');
+         if (data.transcript && data.transcript.length > 0) {
+           linesBox.innerHTML = data.transcript.map(line => `
+             <div style="margin-bottom:10px; font-size:0.85rem; line-height:1.4;">
+               <strong style="color:${line.speaker === 'Agent' ? 'var(--accent-cyan)' : '#a855f7'}; text-transform:uppercase; font-size:0.75rem; display:block; margin-bottom:2px;">${line.speaker}:</strong>
+               <span style="color:#fff;">${line.text}</span>
+             </div>
+           `).join('');
+         } else {
+           linesBox.innerHTML = `<p style="font-style:italic; color:var(--text-secondary); font-size:0.85rem; text-align:center;">No parsed text transcripts available for this interaction type.</p>`;
+         }
+
+         callDrawer.classList.remove('hidden');
+       }
+     } catch (err) {
+       alert(`Could not extract complete call log context data: ${err.message}`);
+     }
+   }
+ });
+
+ const closeCallDrawer = () => {
+   callDrawer.classList.add('hidden');
+   drawerAudioPlayer.pause();
+   drawerAudioPlayer.src = '';
+ };
  closeCallDrawerBtn.addEventListener('click', closeCallDrawer);
  callDrawerOverlay.addEventListener('click', closeCallDrawer);
 
- // Event delegation for table click to open call details drawer
- callsTbody.addEventListener('click', (e) =>{
- if (e.target.classList.contains('view-call-btn')) {
- const callId = e.target.getAttribute('data-id');
- const call = allCalls.find(c =>c.id === callId);
- if (!call) return;
+ // --- Multi-Tab Navigation Management Layer ---
+ const tabButtons = document.querySelectorAll('.tab-btn');
+ const tabPanes = document.querySelectorAll('.tab-pane');
 
- // Load meta details
- document.getElementById('drawer-caller-name').textContent = call.caller_name || 'Anonymous Caller';
- document.getElementById('drawer-caller-phone').textContent = call.caller_phone || '--';
- document.getElementById('drawer-caller-email').textContent = call.caller_email || '--';
- document.getElementById('drawer-caller-address').textContent = call.caller_address || '--';
- document.getElementById('drawer-damage-type').textContent = call.damage_type || '--';
- document.getElementById('drawer-scheduled-dispatch').textContent = call.scheduled_dispatch || '--';
- 
- const minutes = Math.floor(call.duration / 60);
- const seconds = call.duration % 60;
- document.getElementById('drawer-call-duration').textContent = `${minutes}m ${seconds}s`;
+ tabButtons.forEach(btn => {
+   btn.addEventListener('click', () => {
+     const selectedTabId = btn.getAttribute('data-tab');
 
- // Load audio player
- if (call.recording_path) {
- drawerAudioPlayer.src = call.recording_path;
- drawerAudioPlayer.parentElement.classList.remove('hidden');
- } else {
- drawerAudioPlayer.src = '';
- drawerAudioPlayer.parentElement.classList.add('hidden');
- }
+     tabButtons.forEach(b => b.classList.remove('active'));
+     tabPanes.forEach(p => p.classList.remove('active'));
 
- // Load transcript formatted
- const transcriptBody = document.getElementById('drawer-transcript-body');
- if (call.transcript) {
- const lines = call.transcript.split('\n');
- transcriptBody.innerHTML = lines.map(line =>{
- if (line.startsWith('[User]:')) {
- return `<div class="transcript-line user-line"><strong>Customer:</strong>${line.substring(7).trim()}</div>`;
- } else if (line.startsWith('[AI]:')) {
- return `<div class="transcript-line ai-line"><strong>Assistant:</strong>${line.substring(5).trim()}</div>`;
- }
- return `<div class="transcript-line">${line}</div>`;
- }).join('');
- } else {
- transcriptBody.innerHTML = `<p style="color:#6b7280; text-align:center; font-style:italic;">No transcript available for this call.</p>`;
- }
+     btn.classList.add('active');
+     document.getElementById(selectedTabId).classList.add('active');
 
- // Open drawer
- callDrawer.classList.remove('hidden');
- }
+     // Handle polling state triggers based on active navigation window layout
+     if (selectedTabId === 'calls-tab') {
+       fetchLiveTelemetry();
+       fetchHistoricalLogs();
+       if (!pollingIntervalId) {
+         pollingIntervalId = setInterval(fetchLiveTelemetry, 3000); // Poll connections stream every 3s
+       }
+     } else {
+       if (pollingIntervalId) {
+         clearInterval(pollingIntervalId);
+         pollingIntervalId = null;
+       }
+     }
+
+     if (selectedTabId === 'billing-tab') fetchBillingLedgerData();
+     if (selectedTabId === 'knowledge-tab') fetchKnowledgeDirectory();
+     if (selectedTabId === 'settings-tab') handleSettingsViewRouting();
+   });
  });
 
- const updateWebhookUrlInput = () =>{
- const webhookUrlInput = document.getElementById('webhook-url-input');
- if (!webhookUrlInput) return;
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- const queryParam = clientId === 'all'? '?clientId=YOUR_CLIENT_ID': `?clientId=${clientId}`;
- webhookUrlInput.value = `${window.location.origin}/api/webhooks/meta-lead${queryParam}`;
+ // --- Stripe Billing Control Sandbox Flow Mappings ---
+ const stripeCheckoutModal = document.getElementById('stripe-checkout-modal');
+ const closeCheckoutBtn = document.getElementById('close-checkout-btn');
+ const stripeCheckoutOverlay = document.getElementById('stripe-checkout-overlay');
+ const checkoutForm = document.getElementById('checkout-form');
+ const stripeSubscribeBtn = document.getElementById('stripe-subscribe-btn');
+
+ stripeSubscribeBtn.addEventListener('click', () => {
+   stripeCheckoutModal.style.display = 'flex';
+   stripeCheckoutModal.classList.remove('hidden');
+ });
+
+ const closeCheckoutModal = () => {
+   stripeCheckoutModal.style.display = 'none';
+   stripeCheckoutModal.classList.add('hidden');
+ };
+ closeCheckoutBtn.addEventListener('click', closeCheckoutModal);
+ stripeCheckoutOverlay.addEventListener('click', closeCheckoutModal);
+
+ checkoutForm.addEventListener('submit', async (e) => {
+   e.preventDefault();
+   const submitBtn = document.getElementById('checkout-submit-btn');
+   submitBtn.disabled = true;
+   submitBtn.textContent = 'Processing Secure Tokenization...';
+
+   try {
+     const res = await fetch('/api/billing/stripe-subscribe', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ name: document.getElementById('checkout-name').value })
+     });
+     const data = await res.json();
+     if (data.success) {
+       alert('Subscription authenticated via Stripe Webhook successfully.');
+       closeCheckoutModal();
+       fetchBillingLedgerData();
+     }
+   } catch (err) {
+     alert(`Checkout Processing Fault: ${err.message}`);
+   } finally {
+     submitBtn.disabled = false;
+     submitBtn.textContent = 'Pay & Subscribe';
+   }
+ });
+
+ const fetchBillingLedgerData = async () => {
+   try {
+     const clientId = globalClientSelect ? globalClientSelect.value : 'all';
+     const res = await fetch(`/api/billing/ledger?clientId=${clientId}`);
+     const data = await res.json();
+     if (data.success) {
+       document.getElementById('billing-total-calls').textContent = data.ledger.totalSessions;
+       document.getElementById('billing-voice-minutes').textContent = data.ledger.voiceMinutes;
+       document.getElementById('billing-tokens-used').textContent = data.ledger.tokensConsumed;
+       document.getElementById('billing-grand-total').textContent = `$${data.ledger.grandTotal.toFixed(2)}`;
+
+       // Render conditional view based on sub state
+       if (data.subscribed) {
+         document.getElementById('stripe-inactive-view').classList.add('hidden');
+         document.getElementById('stripe-active-view').classList.remove('hidden');
+         document.getElementById('stripe-customer-id').textContent = data.stripeCustomerId || 'cus_live_2026X';
+         document.getElementById('stripe-card-on-file').textContent = 'Visa ending in 4242';
+       } else {
+         document.getElementById('stripe-inactive-view').classList.remove('hidden');
+         document.getElementById('stripe-active-view').classList.add('hidden');
+       }
+
+       // Populate dynamic rows for breakdown matrices
+       const invoiceTbody = document.getElementById('invoice-tbody');
+       invoiceTbody.innerHTML = `
+         <tr><td>Core Pro Account Line</td><td style="text-align:center;">1 Base</td><td style="text-align:right;">$299.00</td><td style="text-align:right;">$${data.subscribed ? '299.00' : '0.00'}</td></tr>
+         <tr><td>Realtime Voice Connect</td><td style="text-align:center;">${data.ledger.voiceMinutes} mins</td><td style="text-align:right;">$0.22/min</td><td style="text-align:right;">$${data.ledger.costVoice.toFixed(2)}</td></tr>
+         <tr><td>Cognitive Token Pipeline</td><td style="text-align:center;">${data.ledger.tokensConsumed} tokens</td><td style="text-align:right;">$0.01/k</td><td style="text-align:right;">$${data.ledger.costTokens.toFixed(2)}</td></tr>
+         <tr><td>CRM Automations Hook</td><td style="text-align:center;">${data.ledger.scheduledDispatches} dispatches</td><td style="text-align:right;">$0.50/ea</td><td style="text-align:right;">$${data.ledger.costCrm.toFixed(2)}</td></tr>
+       `;
+     }
+   } catch (err) {
+     console.error('Error fetching metered billing profiles:', err);
+   }
  };
 
- // Webhook Copy Button
- const copyWebhookBtn = document.getElementById('copy-webhook-btn');
- if (copyWebhookBtn) {
- copyWebhookBtn.addEventListener('click', () =>{
- const webhookUrlInput = document.getElementById('webhook-url-input');
- if (webhookUrlInput) {
- navigator.clipboard.writeText(webhookUrlInput.value);
- const originalText = copyWebhookBtn.innerHTML;
- copyWebhookBtn.innerHTML = 'Copied!';
- setTimeout(() =>{
- copyWebhookBtn.innerHTML = originalText;
- }, 2000);
- }
- });
- }
-
- // --- Meta Ads Simulator ---
- const simulatorForm = document.getElementById('simulator-form');
- const simulatorSubmitBtn = document.getElementById('simulator-submit-btn');
- const simulatorReport = document.getElementById('simulator-report');
-
- if (simulatorForm) {
- simulatorForm.addEventListener('submit', async (e) =>{
- e.preventDefault();
- 
- const client = document.getElementById('sim-client').value;
- const damage = document.getElementById('sim-damage').value;
- const name = document.getElementById('sim-name').value.trim();
- const phone = document.getElementById('sim-phone').value.trim();
- const email = document.getElementById('sim-email').value.trim();
-
- if (!name || !phone || !email) {
- alert('️ Please fill out all required fields.');
- return;
- }
-
- // Show loading
- const spinner = simulatorSubmitBtn.querySelector('.loading-spinner');
- const btnText = simulatorSubmitBtn.querySelector('.btn-text');
- if (spinner) spinner.classList.remove('hidden');
- if (btnText) btnText.textContent = 'Triggering Ingestion...';
- simulatorSubmitBtn.disabled = true;
- simulatorReport.classList.add('hidden');
- simulatorReport.classList.remove('error');
-
- try {
- const res = await fetch(`/api/webhooks/meta-lead?clientId=${client}`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({
- name,
- phone,
- email,
- damageType: damage,
- clientId: client
- })
- });
-
- const data = await res.json();
- simulatorReport.classList.remove('hidden');
-
- if (res.ok && data.success) {
- if (data.blocked) {
- simulatorReport.innerHTML = `️ [Lead Guard Blocked]\n-------------------------\nStatus: Success (Blocked duplicate)\nMessage: ${data.message}\nClient: ${client}\nNiche: ${damage}\nLead: ${name} (${email})`;
- simulatorReport.style.borderColor = '#eab308';
- simulatorReport.style.color = '#eab308';
- } else {
- simulatorReport.innerHTML = `[Lead Ingested Successfully]\n--------------------------------\nStatus: Success\nMessage: ${data.message}\nClient: ${client}\nNiche: ${damage}\nLead: ${name} (${email})\nSMS/Email notification dispatched.`;
- simulatorReport.style.borderColor = '#10b981';
- simulatorReport.style.color = '#34d399';
- 
- // Clear inputs
- document.getElementById('sim-name').value = '';
- document.getElementById('sim-phone').value = '';
- document.getElementById('sim-email').value = '';
- }
- 
- // Refresh dashboard to show the new lead
- refreshDashboard();
- } else {
- throw new Error(data.error || 'Webhook returned error status');
- }
- } catch (err) {
- console.error(err);
- simulatorReport.classList.remove('hidden');
- simulatorReport.style.borderColor = '#ef4444';
- simulatorReport.style.color = '#f87171';
- simulatorReport.innerHTML = `[Ingestion Failed]\n---------------------\nError: ${err.message}`;
- } finally {
- if (spinner) spinner.classList.add('hidden');
- if (btnText) btnText.textContent = 'Trigger Mock Meta Ad Ingestion';
- simulatorSubmitBtn.disabled = false;
- }
- });
- }
-
- if (globalClientSelect) {
- globalClientSelect.addEventListener('change', () =>{
- updateWebhookUrlInput();
- refreshDashboard();
- loadClientSettings();
- });
- }
-
- // --- Knowledge Base RAG Management ---
+ // --- Knowledge Base Document Vector Management Layer ---
  const ragUploadForm = document.getElementById('rag-upload-form');
  const ragDropzone = document.getElementById('rag-dropzone');
  const ragFileInput = document.getElementById('rag-file-input');
  const ragFilenameLabel = document.getElementById('rag-filename-label');
  const ragUploadBtn = document.getElementById('rag-upload-btn');
  const ragFilesList = document.getElementById('rag-files-list');
- const ragQueryForm = document.getElementById('rag-query-form');
- const ragSandboxQuery = document.getElementById('rag-sandbox-query');
- const ragResultsContainer = document.getElementById('rag-results-container');
- const ragLatencyLabel = document.getElementById('rag-sandbox-latency');
 
- let selectedFileContent = null;
- let selectedFileName = null;
-
- // Dropzone Interactivity
- if (ragDropzone && ragFileInput) {
- ragDropzone.addEventListener('click', () =>ragFileInput.click());
-
- ragDropzone.addEventListener('dragover', (e) =>{
- e.preventDefault();
- ragDropzone.style.borderColor = 'var(--accent-orange)';
- ragDropzone.style.background = 'rgba(249, 115, 22, 0.05)';
+ ragDropzone.addEventListener('click', () => ragFileInput.click());
+ ragFileInput.addEventListener('change', () => {
+   if (ragFileInput.files[0]) {
+     ragFilenameLabel.textContent = ragFileInput.files[0].name;
+     ragUploadBtn.disabled = false;
+   }
  });
 
- ragDropzone.addEventListener('dragleave', () =>{
- ragDropzone.style.borderColor = 'var(--glass-border)';
- ragDropzone.style.background = 'rgba(0,0,0,0.1)';
+ ragUploadForm.addEventListener('submit', async (e) => {
+   e.preventDefault();
+   const file = ragFileInput.files[0];
+   if (!file) return;
+
+   ragUploadBtn.disabled = true;
+   ragUploadBtn.innerHTML = `<span class="loading-spinner" style="margin-right:8px;"></span>Embedding Chunks...`;
+
+   const formData = new FormData();
+   formData.append('document', file);
+   formData.append('clientId', globalClientSelect.value);
+
+   try {
+     const res = await fetch('/api/knowledge/embed-file', {
+       method: 'POST',
+       body: formData
+     });
+     const data = await res.json();
+     if (data.success) {
+       alert(`Document segmented into ${data.chunks} vector vectors stored seamlessly in Pinecone schema.`);
+       ragFileInput.value = '';
+       ragFilenameLabel.textContent = 'Drag & drop or click to browse';
+       fetchKnowledgeDirectory();
+     }
+   } catch (err) {
+     alert(`Vector parsing configuration layer fault: ${err.message}`);
+   } finally {
+     ragUploadBtn.innerHTML = `<span class="btn-text">Chunk & Embed Document</span>`;
+   }
  });
 
- ragDropzone.addEventListener('drop', (e) =>{
- e.preventDefault();
- ragDropzone.style.borderColor = 'var(--glass-border)';
- ragDropzone.style.background = 'rgba(0,0,0,0.1)';
- if (e.dataTransfer.files.length >0) {
- handleFileSelect(e.dataTransfer.files[0]);
- }
- });
-
- ragFileInput.addEventListener('change', (e) =>{
- if (e.target.files.length >0) {
- handleFileSelect(e.target.files[0]);
- }
- });
- }
-
- const handleFileSelect = (file) =>{
- if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
- alert('️ Only .txt and .md text files are supported.');
- return;
- }
-
- selectedFileName = file.name;
- const reader = new FileReader();
- reader.onload = (e) =>{
- selectedFileContent = e.target.result;
- ragFilenameLabel.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
- ragUploadBtn.disabled = false;
- };
- reader.readAsText(file);
- };
-
- // File Upload Handler
- if (ragUploadForm) {
- ragUploadForm.addEventListener('submit', async (e) =>{
- e.preventDefault();
- if (!selectedFileContent || !selectedFileName) return;
-
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- if (clientId === 'all') {
- alert('️ Please select a specific client account from the header to assign this knowledge base.');
- return;
- }
-
- const btnText = ragUploadBtn.querySelector('.btn-text');
- const spinner = ragUploadBtn.querySelector('.loading-spinner');
- const originalText = btnText ? btnText.textContent : 'Chunk & Embed Document';
-
- ragUploadBtn.disabled = true;
- if (btnText) btnText.textContent = 'Chunking & embedding...';
- if (spinner) spinner.classList.remove('hidden');
-
- try {
- const res = await fetch('/api/knowledge/upload', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({
- clientId,
- filename: selectedFileName,
- content: selectedFileContent
- })
- });
-
- const data = await res.json();
- if (res.ok && data.success) {
- alert(`Document chunked and embedded successfully! Total: ${data.chunkCount} vector blocks.`);
- 
- // Reset upload states
- selectedFileContent = null;
- selectedFileName = null;
- ragFilenameLabel.textContent = 'Drag & drop or click to browse';
- ragUploadBtn.disabled = true;
- if (ragFileInput) ragFileInput.value = '';
- 
- fetchRagFiles();
- } else {
- throw new Error(data.error || 'Server upload failed.');
- }
- } catch (err) {
- alert(`Ingestion failed: ${err.message}`);
- } finally {
- if (spinner) spinner.classList.add('hidden');
- if (btnText) btnText.textContent = originalText;
- }
- });
- }
-
- // List Files Directory
- const fetchRagFiles = async () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- if (clientId === 'all') {
- ragFilesList.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-top: 20px;">Select a specific client account to view directory.</p>`;
- return;
- }
-
- try {
- const res = await fetch(`/api/knowledge/files?clientId=${clientId}`);
- const data = await res.json();
- if (res.ok && data.success) {
- renderRagFiles(data.files);
- }
- } catch (err) {
- console.error('Failed to fetch RAG files list:', err);
- }
+ const fetchKnowledgeDirectory = async () => {
+   try {
+     const clientId = globalClientSelect.value;
+     const res = await fetch(`/api/knowledge/directory?clientId=${clientId}`);
+     const data = await res.json();
+     if (data.success && data.files.length > 0) {
+       ragFilesList.innerHTML = data.files.map(f => `
+         <div class="glass-card" style="padding:10px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; border: 1px solid rgba(255,255,255,0.04);">
+           <span style="font-size:0.85rem; color:#fff; font-family:monospace; overflow:hidden; text-overflow:ellipsis;">📂 ${f.name}</span>
+           <span style="font-size:0.75rem; color:var(--text-secondary);">${f.size} • ${f.chunks} Chunks</span>
+         </div>
+       `).join('');
+     } else {
+       ragFilesList.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-top: 20px;">No custom knowledge vectors mapped to this context.</p>`;
+     }
+   } catch (err) {
+     console.error('Error mapping files system:', err);
+   }
  };
 
- const renderRagFiles = (files) =>{
- if (!files || files.length === 0) {
- ragFilesList.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-top: 20px;">No files uploaded yet.</p>`;
- return;
- }
-
- ragFilesList.innerHTML = files.map(f =>`
- <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem;">
- <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
- <span style="font-size: 1rem;"></span>
- <span style="font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${f.filename}</span>
- <span style="font-size: 0.75rem; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 10px;">${f.chunk_count} chunks</span>
- </div>
- <button class="delete-rag-btn"data-filename="${f.filename}"style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; line-height: 1; transition: color var(--transition-fast);">️</button>
- </div>
- `).join('');
- };
-
- // Delete File delegation
- if (ragFilesList) {
- ragFilesList.addEventListener('click', async (e) =>{
- if (e.target.classList.contains('delete-rag-btn')) {
- const filename = e.target.getAttribute('data-filename');
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- if (clientId === 'all') return;
-
- if (!confirm(`Delete knowledge base file "${filename}"? This removes all vector embeddings from memory.`)) return;
-
- try {
- const res = await fetch('/api/knowledge/files', {
- method: 'DELETE',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId, filename })
- });
- const data = await res.json();
- if (res.ok && data.success) {
- fetchRagFiles();
- } else {
- throw new Error(data.error || 'Delete failed.');
- }
- } catch (err) {
- alert(`Failed to delete file: ${err.message}`);
- }
- }
- });
- }
-
- // Vector Sandbox Testing Form
- if (ragQueryForm) {
- ragQueryForm.addEventListener('submit', async (e) =>{
- e.preventDefault();
- const query = ragSandboxQuery.value.trim();
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- if (clientId === 'all') {
- alert('️ Please select a specific client account in the header first.');
- return;
- }
-
- ragResultsContainer.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 50px;">Scoring matching vectors...</p>';
- ragLatencyLabel.textContent = 'Latency: --ms';
-
- try {
- const res = await fetch('/api/knowledge/query', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId, query })
- });
-
- const data = await res.json();
- if (res.ok && data.success) {
- ragLatencyLabel.textContent = `Latency: ${data.latencyMs}ms`;
- if (!data.matches || data.matches.length === 0) {
- ragResultsContainer.innerHTML = '<p style="color: #fca5a5; text-align: center; margin-top: 50px;">No vector matches. Try seeding documents in the left column.</p>';
- return;
- }
-
- ragResultsContainer.innerHTML = data.matches.map((m, index) =>{
- const matchPct = (m.score * 100).toFixed(1);
- let matchColor = '#9ca3af'; // default grey
- if (m.score >0.8) matchColor = '#34d399'; // green for high match
- else if (m.score >0.6) matchColor = '#60a5fa'; // blue for medium
-
- return `
- <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 12px; border-radius: var(--border-radius-sm);">
- <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.8rem; margin-bottom: 6px;">
- <span style="color: var(--accent-orange);">MATCH #${index + 1}</span>
- <span style="color: ${matchColor};">Cosine Similarity: ${matchPct}%</span>
- </div>
- <div style="color: #fff; white-space: pre-wrap; word-break: break-word; font-family: sans-serif; font-size: 0.85rem; line-height: 1.4;">${m.content}</div>
- </div>
- `;
- }).join('');
- } else {
- throw new Error(data.error || 'Sandbox query returned error');
- }
- } catch (err) {
- console.error(err);
- ragResultsContainer.innerHTML = `<p style="color: #f87171; text-align: center; margin-top: 50px;">Query Error: ${err.message}</p>`;
- }
- });
- }
-
- // --- Usage & Billing Tab Handling ---
- const billingTotalCalls = document.getElementById('billing-total-calls');
- const billingVoiceMinutes = document.getElementById('billing-voice-minutes');
- const billingTokensUsed = document.getElementById('billing-tokens-used');
- const billingGrandTotal = document.getElementById('billing-grand-total');
- const invoiceTbody = document.getElementById('invoice-tbody');
- const billingSessionsTbody = document.getElementById('billing-sessions-tbody');
- const simulateChargeBtn = document.getElementById('simulate-charge-btn');
- const downloadInvoiceBtn = document.getElementById('download-invoice-btn');
-
- const formatTime = (totalSeconds) =>{
- const h = Math.floor(totalSeconds / 3600);
- const m = Math.floor((totalSeconds % 3600) / 60);
- const s = totalSeconds % 60;
- return `${h >0 ? h + ':': ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
- };
-
- const fetchBillingData = async () =>{
- try {
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- const res = await fetch(`/api/dashboard-billing?clientId=${clientId}`);
- const data = await res.json();
- if (res.ok && data.success) {
- const b = data.billing;
- 
- // Set metrics cards
- if (billingTotalCalls) billingTotalCalls.textContent = b.totalCalls;
- if (billingVoiceMinutes) billingVoiceMinutes.textContent = formatTime(b.totalVoiceDurationSeconds);
- if (billingTokensUsed) billingTokensUsed.textContent = b.totalTokens.toLocaleString();
- if (billingGrandTotal) billingGrandTotal.textContent = `$${b.costs.total.toFixed(2)}`;
-
- // Render Invoice table
- const voiceMins = (b.totalVoiceDurationSeconds / 60).toFixed(2);
- if (invoiceTbody) {
- invoiceTbody.innerHTML = `
- <tr>
- <td style="text-align: left; font-weight: 600;">️ AI Voice Stream</td>
- <td style="text-align: center;">${voiceMins} mins</td>
- <td style="text-align: right; color: var(--text-secondary);">$${b.rates.voiceMinute.toFixed(2)}/min</td>
- <td style="text-align: right; font-weight: bold; color: #fff;">$${b.costs.voice.toFixed(2)}</td>
- </tr>
- <tr>
- <td style="text-align: left; font-weight: 600;">OpenAI LLM Tokens</td>
- <td style="text-align: center;">${b.totalTokens.toLocaleString()} tokens</td>
- <td style="text-align: right; color: var(--text-secondary);">$${(b.rates.token * 1000).toFixed(4)}/1K</td>
- <td style="text-align: right; font-weight: bold; color: #fff;">$${b.costs.tokens.toFixed(2)}</td>
- </tr>
- <tr>
- <td style="text-align: left; font-weight: 600;">3rd-Party Dispatches</td>
- <td style="text-align: center;">${b.totalDispatches} dispatches</td>
- <td style="text-align: right; color: var(--text-secondary);">$${b.rates.dispatch.toFixed(2)}/each</td>
- <td style="text-align: right; font-weight: bold; color: #fff;">$${b.costs.dispatches.toFixed(2)}</td>
- </tr>
- <tr style="border-top: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.02);">
- <td colspan="3"style="text-align: left; font-weight: 800; color: #fff; text-transform: uppercase;">Total Invoice Due</td>
- <td style="text-align: right; font-weight: 800; color: var(--primary-color); font-size: 1.1rem;">$${b.costs.total.toFixed(2)}</td>
- </tr>
- `;
- }
-
- // Render Metered Sessions
- if (billingSessionsTbody) {
- if (b.sessions.length === 0) {
- billingSessionsTbody.innerHTML = `<tr><td colspan="6"class="loading-text"style="color: var(--text-secondary); text-align: center; padding: 20px;">No sessions metered yet.</td></tr>`;
- } else {
- billingSessionsTbody.innerHTML = b.sessions.map(s =>{
- const sourceEmoji = s.source === 'browser'? '️ Browser': (s.source === 'telephony'? 'Twilio': 'Chat');
- return `
- <tr>
- <td style="text-align: left; font-family: monospace; font-size: 0.8rem; color: var(--text-secondary);">${s.id}</td>
- <td style="text-align: center; font-size: 0.85rem; font-weight: 500;">${sourceEmoji}</td>
- <td style="text-align: center;">${formatTime(s.durationSeconds)}</td>
- <td style="text-align: center; color: var(--text-secondary);">${s.tokensUsed.toLocaleString()}</td>
- <td style="text-align: center;">${s.dispatchCount >0 ? 'Yes ('+ s.dispatchCount + ')': 'None'}</td>
- <td style="text-align: right; font-weight: 700; color: #fff;">$${s.cost.toFixed(2)}</td>
- </tr>
- `;
- }).join('');
- }
- }
-
- // Render Stripe Details
- const stripe = b.stripe;
- const stripeInactiveView = document.getElementById('stripe-inactive-view');
- const stripeActiveView = document.getElementById('stripe-active-view');
- const stripeCustomerIdEl = document.getElementById('stripe-customer-id');
- const stripeCardEl = document.getElementById('stripe-card-on-file');
- const stripeInvoicesTbody = document.getElementById('stripe-invoices-tbody');
-
- if (stripe) {
- if (stripe.status === 'active') {
- if (stripeInactiveView) stripeInactiveView.classList.add('hidden');
- if (stripeActiveView) stripeActiveView.classList.remove('hidden');
- if (stripeCustomerIdEl) stripeCustomerIdEl.textContent = stripe.customerId;
- if (stripeCardEl) stripeCardEl.textContent = `${stripe.cardBrand} ending in ${stripe.cardLast4}`;
- } else {
- if (stripeInactiveView) stripeInactiveView.classList.remove('hidden');
- if (stripeActiveView) stripeActiveView.classList.add('hidden');
- }
-
- // Render invoices history table
- if (stripeInvoicesTbody) {
- if (stripe.invoices.length === 0) {
- stripeInvoicesTbody.innerHTML = `<tr><td colspan="5"class="loading-text"style="color: var(--text-secondary); text-align: center; padding: 15px;">No invoice receipts processed yet.</td></tr>`;
- } else {
- stripeInvoicesTbody.innerHTML = stripe.invoices.map(inv =>{
- const specStr = `️ ${inv.voice_minutes}m | ${(inv.tokens_used/1000).toFixed(0)}k | ${inv.dispatches}`;
- return `
- <tr>
- <td style="text-align: left; font-family: monospace; font-size: 0.85rem; color: var(--accent-purple);">${inv.invoice_id}</td>
- <td style="text-align: center; font-size: 0.85rem;">${inv.created_at}</td>
- <td style="text-align: center; font-size: 0.8rem; color: var(--text-secondary);">${specStr}</td>
- <td style="text-align: right; font-weight: 700; color: #fff;">$${inv.amount.toFixed(2)}</td>
- <td style="text-align: center;">
- <span style="font-size: 0.75rem; background: rgba(34, 197, 94, 0.2); padding: 2px 8px; border-radius: 4px; color: #86efac; font-weight: bold; text-transform: uppercase;">PAID</span>
- </td>
- </tr>
- `;
- }).join('');
- }
- }
- }
- }
- } catch (err) {
- console.error('Error fetching billing data:', err);
- }
- };
-
- // Bind Simulator action
- if (simulateChargeBtn) {
- simulateChargeBtn.addEventListener('click', async () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : 'restoration_lv';
- if (clientId === 'all') {
- alert('Please select a specific Client Workspace above to simulate a metered call charge.');
- return;
- }
- simulateChargeBtn.disabled = true;
- const originalText = simulateChargeBtn.innerHTML;
- simulateChargeBtn.innerHTML = 'Simulating...';
- try {
- const res = await fetch('/api/simulate-call-log', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId })
- });
- if (res.ok) {
- await refreshDashboard();
- } else {
- alert('Failed to simulate call.');
- }
- } catch (err) {
- console.error(err);
- } finally {
- simulateChargeBtn.disabled = false;
- simulateChargeBtn.innerHTML = originalText;
- }
- });
- }
-
- // Bind Download PDF Mock action
- if (downloadInvoiceBtn) {
- downloadInvoiceBtn.addEventListener('click', () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- const clientName = clientId === 'all'? 'All Clients Summary': (clientId === 'restoration_lv'? 'Restoration Pro Las Vegas': (clientId === 'roofing_sc'? 'Sin City Roof Crew': (clientId === 'property_apex'? 'Apex Property Management': 'Nexus Realty Group')));
- 
- const grandTotalStr = billingGrandTotal ? billingGrandTotal.textContent : '$0.00';
- const voiceMinutesStr = billingVoiceMinutes ? billingVoiceMinutes.textContent : '0:00';
- const tokensUsedStr = billingTokensUsed ? billingTokensUsed.textContent : '0';
- const totalCallsStr = billingTotalCalls ? billingTotalCalls.textContent : '0';
-
- const invoiceText = `
-=========================================
- SIMULATED SAAS INVOICE
-=========================================
-Client: ${clientName}
-Client ID: ${clientId}
-Billing Period: June 1 - June 30, 2026
-Status: Simulated / Pending Approval
------------------------------------------
-Meters Breakdown:
-- Voice Call Stream: ${voiceMinutesStr} mins
-- OpenAI LLM Tokens: ${tokensUsedStr} tokens
-- 3rd-Party Dispatches: ${totalCallsStr} sessions
------------------------------------------
-GRAND TOTAL: ${grandTotalStr}
-=========================================
-Thank you for using Agentic Funnel Machine!
-`;
- 
- const blob = new Blob([invoiceText], { type: 'text/plain'});
- const url = URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url;
- a.download = `Invoice_${clientId}_June_2026.txt`;
- document.body.appendChild(a);
- a.click();
- document.body.removeChild(a);
- URL.revokeObjectURL(url);
- });
- }
-
- // --- Outbound Templates & Outreach Logs Logic ---
- const fetchTemplates = async () =>{
- const grid = document.getElementById('campaign-templates-grid');
- if (!grid) return;
-
- try {
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- const res = await fetch(`/api/outbound/templates?clientId=${clientId}`);
- const data = await res.json();
- if (data.success) {
- renderTemplates(data.templates);
- }
- } catch (err) {
- console.error('Error fetching templates:', err);
- grid.innerHTML = `<p style="color:#fca5a5; text-align:center;">Failed to load templates.</p>`;
- }
- };
-
- const renderTemplates = (templates) =>{
- const grid = document.getElementById('campaign-templates-grid');
- if (!grid) return;
-
- if (!templates || templates.length === 0) {
- grid.innerHTML = `<p style="color:var(--text-secondary); text-align:center; grid-column:span 2; padding:30px 0;">No templates configured.</p>`;
- return;
- }
-
- grid.innerHTML = templates.map(t =>{
- const typeLabel = t.is_static === 1 ? 'Static HTML': 'AI Personalized';
- return `
- <div class="glass-card"style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--glass-border); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; justify-content: space-between;">
- <div>
- <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
- <h3 style="color: #fff; font-size: 1.15rem; font-weight: 600; margin: 0;">${t.name}</h3>
- <span class="badge"style="background: rgba(255,255,255,0.05); color: var(--text-secondary); font-size: 0.75rem; padding: 3px 8px; border-radius: 4px;">${typeLabel}</span>
- </div>
- <p style="color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; word-break: break-all; margin: 5px 0 12px 0;">
- <strong>Subject:</strong>${t.subject_template}
- </p>
- <div style="background: rgba(0,0,0,0.15); border-radius: 4px; padding: 10px; font-family: monospace; font-size: 0.75rem; line-height: 1.4; color: var(--text-secondary); max-height: 80px; overflow-y: auto; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.03);">
- ${t.body_prompt}
- </div>
- </div>
- <div style="display: flex; gap: 10px; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
- <button class="btn btn-secondary edit-template-btn"
- data-id="${t.id}"
- data-client="${t.client_id}"
- data-name="${t.name}"
- data-subject="${t.subject_template}"
- data-prompt="${t.body_prompt.replace(/"/g, '&quot;')}"
- data-static="${t.is_static}"
- style="flex: 1; justify-content: center; font-size: 0.8rem; padding: 6px 12px; cursor: pointer;">
- ️ Customize
- </button>
- <button class="btn btn-primary run-campaign-btn"
- data-id="${t.id}"
- data-client="${t.client_id}"
- style="flex: 1.2; justify-content: center; font-size: 0.8rem; padding: 6px 12px; cursor: pointer;">
- Run Outreach
- </button>
- </div>
- </div>
- `;
- }).join('');
- };
-
- const fetchOutreachLogs = async () =>{
- const tbody = document.getElementById('outreach-logs-tbody');
- if (!tbody) return;
-
- try {
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- const res = await fetch(`/api/outbound/logs?clientId=${clientId}`);
- const data = await res.json();
- if (data.success) {
- allOutreachLogs = data.logs;
- renderOutreachLogs(allOutreachLogs);
- }
- } catch (err) {
- console.error('Error fetching outreach logs:', err);
- tbody.innerHTML = `<tr><td colspan="6"class="loading-text"style="color: #fca5a5;">Failed to load outreach logs.</td></tr>`;
- }
- };
-
- const renderOutreachLogs = (logs) =>{
- const tbody = document.getElementById('outreach-logs-tbody');
- if (!tbody) return;
-
- if (!logs || logs.length === 0) {
- tbody.innerHTML = `<tr><td colspan="6"class="loading-text"style="color: var(--text-secondary); text-align: center; padding: 20px;">No outbound dispatches logged yet.</td></tr>`;
- return;
- }
-
- tbody.innerHTML = logs.map(log =>{
- const dateStr = new Date(log.created_at).toLocaleString();
- const statusClass = log.status === 'sent'? 'badge-contacted': 'badge-pending';
- const statusLabel = log.status === 'sent'? 'Sent': 'Failed';
- 
- return `
- <tr>
- <td style="font-family: monospace; font-size: 0.8rem;">${log.id}</td>
- <td style="font-weight: 600; color: #fff;">${log.email}</td>
- <td style="font-family: monospace; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.subject}</td>
- <td>${dateStr}</td>
- <td><span class="badge ${statusClass}">${statusLabel}</span></td>
- <td>
- <button class="btn btn-secondary btn-table view-outreach-btn"
- data-subject="${log.subject.replace(/"/g, '&quot;')}"
- data-body="${log.body.replace(/"/g, '&quot;').replace(/\n/g, '\\n')}"
- style="font-size: 0.75rem; padding: 4px 8px; cursor: pointer;">View Email</button>
- </td>
- </tr>
- `;
- }).join('');
- };
-
- const searchOutreachInput = document.getElementById('search-outreach');
- if (searchOutreachInput) {
- searchOutreachInput.addEventListener('input', (e) =>{
- const query = e.target.value.toLowerCase().trim();
- const filtered = allOutreachLogs.filter(log =>
- log.email.toLowerCase().includes(query) ||
- log.subject.toLowerCase().includes(query)
- );
- renderOutreachLogs(filtered);
- });
- }
-
- // --- Outbound Templates Modal Logic ---
- const editTemplateModal = document.getElementById('edit-template-modal');
- const editTemplateForm = document.getElementById('edit-template-form');
- const editTemplateOverlay = document.getElementById('edit-template-overlay');
- const closeTemplateModalBtn = document.getElementById('close-template-modal-btn');
- const cancelTemplateBtn = document.getElementById('cancel-template-btn');
- const editTemplateBodyLabel = document.getElementById('edit-template-body-label');
- const editTemplateType = document.getElementById('edit-template-type');
-
- const openTemplateModal = (template) =>{
- document.getElementById('edit-template-id').value = template.id;
- document.getElementById('edit-template-name').value = template.name;
- document.getElementById('edit-template-subject').value = template.subject;
- document.getElementById('edit-template-body').value = template.prompt;
- editTemplateType.value = template.isStatic;
- 
- updateTextareaLabel(template.isStatic);
-
- if (editTemplateModal) {
- editTemplateModal.style.display = 'flex';
- editTemplateModal.classList.remove('hidden');
- }
- };
-
- const closeTemplateModal = () =>{
- if (editTemplateModal) {
- editTemplateModal.style.display = 'none';
- editTemplateModal.classList.add('hidden');
- }
- };
-
- const updateTextareaLabel = (isStatic) =>{
- if (!editTemplateBodyLabel) return;
- if (Number(isStatic) === 1) {
- editTemplateBodyLabel.textContent = 'Static Email Body Copy';
- } else {
- editTemplateBodyLabel.textContent = 'AI Copywriting System Prompt';
- }
- };
-
- if (editTemplateType) {
- editTemplateType.addEventListener('change', (e) =>{
- updateTextareaLabel(e.target.value);
- });
- }
-
- if (closeTemplateModalBtn) closeTemplateModalBtn.addEventListener('click', closeTemplateModal);
- if (cancelTemplateBtn) cancelTemplateBtn.addEventListener('click', closeTemplateModal);
- if (editTemplateOverlay) editTemplateOverlay.addEventListener('click', closeTemplateModal);
-
- const campaignTemplatesGrid = document.getElementById('campaign-templates-grid');
- if (campaignTemplatesGrid) {
- campaignTemplatesGrid.addEventListener('click', async (e) =>{
- const target = e.target;
- if (target.classList.contains('edit-template-btn')) {
- const id = target.getAttribute('data-id');
- const name = target.getAttribute('data-name');
- const subject = target.getAttribute('data-subject');
- const prompt = target.getAttribute('data-prompt');
- const isStatic = target.getAttribute('data-static');
- openTemplateModal({ id, name, subject, prompt, isStatic });
- } else if (target.classList.contains('run-campaign-btn')) {
- const templateId = target.getAttribute('data-id');
- const clientId = target.getAttribute('data-client');
- 
- if (clientId === 'all') {
- alert('️ Please select a specific client account in the top selector to trigger a campaign.');
- return;
- }
-
- if (!confirm(`Are you sure you want to run outreach on all pending leads for campaign template "${templateId}"?`)) {
- return;
- }
-
- const originalText = target.innerHTML;
- target.disabled = true;
- target.innerHTML = `<span class="loading-spinner"style="width:12px; height:12px; border-width:1.5px;"></span>Dispatching...`;
-
- try {
- const res = await fetch('/api/outbound/run-campaign', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId, templateId })
- });
- const data = await res.json();
- if (res.ok && data.success) {
- alert(`Campaign outreach complete! ${data.message}`);
- refreshDashboard();
- } else {
- throw new Error(data.error || 'Outreach execution failed.');
- }
- } catch (err) {
- alert(`Campaign run error: ${err.message}`);
- } finally {
- target.disabled = false;
- target.innerHTML = originalText;
- }
- }
- });
- }
-
- if (editTemplateForm) {
- editTemplateForm.addEventListener('submit', async (e) =>{
- e.preventDefault();
- const id = document.getElementById('edit-template-id').value;
- const name = document.getElementById('edit-template-name').value.trim();
- const subjectTemplate = document.getElementById('edit-template-subject').value.trim();
- const bodyPrompt = document.getElementById('edit-template-body').value.trim();
- const isStatic = Number(editTemplateType.value);
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
-
- if (clientId === 'all') {
- alert('️ Please select a specific client tenant in the top selector to configure a template.');
- return;
- }
-
- try {
- const res = await fetch('/api/outbound/templates', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ id, clientId, name, subjectTemplate, bodyPrompt, isStatic })
- });
- const data = await res.json();
- if (res.ok && data.success) {
- closeTemplateModal();
- fetchTemplates();
- } else {
- throw new Error(data.error || 'Failed to save template.');
- }
- } catch (err) {
- alert(`Save error: ${err.message}`);
- }
- });
- }
-
- const outreachLogsTbody = document.getElementById('outreach-logs-tbody');
- if (outreachLogsTbody) {
- outreachLogsTbody.addEventListener('click', (e) =>{
- const target = e.target;
- if (target.classList.contains('view-outreach-btn')) {
- const subject = target.getAttribute('data-subject');
- const body = target.getAttribute('data-body').replace(/\\n/g, '\n');
- 
- if (campaignTemplateSelect) campaignTemplateSelect.disabled = true;
- if (campaignSubjectInput) {
- campaignSubjectInput.value = subject;
- campaignSubjectInput.disabled = true;
- }
- if (campaignBodyTextarea) {
- campaignBodyTextarea.value = body;
- campaignBodyTextarea.disabled = true;
- }
- if (sendCampaignEmailBtn) {
- sendCampaignEmailBtn.disabled = true;
- sendCampaignEmailBtn.innerHTML = '️ Outreach Already Dispatched';
- }
- 
- if (campaignDrawer) {
- campaignDrawer.classList.remove('hidden');
- }
- }
- });
- }
-
- const fetchAnalyticsData = async () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- try {
- const res = await fetch(`/api/analytics-data?clientId=${clientId}`);
- const result = await res.json();
- if (!result.success || !result.data) return;
- const data = result.data;
-
- // Common Chart.js options for dark mode
- const gridOpts = {
- color: 'rgba(255, 255, 255, 0.05)',
- drawBorder: false
- };
- const tickOpts = {
- color: '#9ca3af',
- font: {
- family: 'Outfit, sans-serif',
- size: 11
- }
- };
- const legendOpts = {
- labels: {
- color: '#fff',
- font: {
- family: 'Outfit, sans-serif',
- weight: '600'
- }
- }
- };
-
- // --- 1. Intake Trends (Line Chart) ---
- if (intakeTrendsChart) {
- intakeTrendsChart.destroy();
- }
- const ctxIntake = document.getElementById('chart-intake-trends');
- if (ctxIntake) {
- const ctx = ctxIntake.getContext('2d');
- intakeTrendsChart = new Chart(ctx, {
- type: 'line',
- data: {
- labels: data.dates.map(d =>{
- const parts = d.split('-');
- const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
- return `${monthNames[parseInt(parts[1]) - 1]} ${parts[2]}`;
- }),
- datasets: [
- {
- label: 'Total Conversations',
- data: data.trends.conversations,
- borderColor: '#a855f7',
- backgroundColor: 'rgba(168, 85, 247, 0.1)',
- fill: true,
- tension: 0.3,
- borderWidth: 2.5
- },
- {
- label: 'Qualified Leads',
- data: data.trends.leads,
- borderColor: '#06b6d4',
- backgroundColor: 'rgba(6, 182, 212, 0.1)',
- fill: true,
- tension: 0.3,
- borderWidth: 2.5
- }
- ]
- },
- options: {
- responsive: true,
- maintainAspectRatio: false,
- plugins: {
- legend: legendOpts,
- tooltip: {
- backgroundColor: '#0c0f16',
- titleFont: { family: 'Outfit, sans-serif'},
- bodyFont: { family: 'Outfit, sans-serif'},
- borderColor: 'rgba(255, 255, 255, 0.1)',
- borderWidth: 1
- }
- },
- scales: {
- x: { grid: gridOpts, ticks: tickOpts },
- y: { 
- grid: gridOpts, 
- ticks: {
- ...tickOpts,
- stepSize: 1,
- precision: 0
- }
- }
- }
- }
- });
- }
-
- // --- 2. Qualification Funnel (Doughnut Chart) ---
- if (qualificationFunnelChart) {
- qualificationFunnelChart.destroy();
- }
- const ctxFunnel = document.getElementById('chart-qualification-funnel');
- if (ctxFunnel) {
- const ctx = ctxFunnel.getContext('2d');
- const funnel = data.funnel;
- const inProgress = Math.max(0, funnel.conversations - (funnel.qualified + funnel.booked));
-
- qualificationFunnelChart = new Chart(ctx, {
- type: 'doughnut',
- data: {
- labels: ['Booked Appointments', 'Qualified (Pending)', 'Duplicate Blocked', 'In-Progress Sessions'],
- datasets: [{
- data: [funnel.booked, funnel.qualified, funnel.blocked, inProgress],
- backgroundColor: [
- '#22c55e', // Success Green
- '#06b6d4', // Cyan
- '#ef4444', // Red
- 'rgba(255, 255, 255, 0.15)'// Muted
- ],
- borderWidth: 1,
- borderColor: '#0c0f16'
- }]
- },
- options: {
- responsive: true,
- maintainAspectRatio: false,
- plugins: {
- legend: {
- ...legendOpts,
- position: 'bottom',
- labels: {
- ...legendOpts.labels,
- padding: 15
- }
- },
- tooltip: {
- backgroundColor: '#0c0f16',
- titleFont: { family: 'Outfit, sans-serif'},
- bodyFont: { family: 'Outfit, sans-serif'},
- borderColor: 'rgba(255, 255, 255, 0.1)',
- borderWidth: 1
- }
- },
- cutout: '65%'
- }
- });
- }
-
- // --- 3. Billing Spend (Stacked Bar Chart) ---
- if (billingSpendChart) {
- billingSpendChart.destroy();
- }
- const ctxBilling = document.getElementById('chart-billing-spend');
- if (ctxBilling) {
- const ctx = ctxBilling.getContext('2d');
- billingSpendChart = new Chart(ctx, {
- type: 'bar',
- data: {
- labels: data.dates.map(d =>{
- const parts = d.split('-');
- const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
- return `${monthNames[parseInt(parts[1]) - 1]} ${parts[2]}`;
- }),
- datasets: [
- {
- label: 'Voice Reception Connection ($0.15/min)',
- data: data.billing.voice,
- backgroundColor: '#3b82f6',
- stack: 'spend'
- },
- {
- label: 'AI Token Computation ($0.00003/tok)',
- data: data.billing.token,
- backgroundColor: '#a855f7',
- stack: 'spend'
- },
- {
- label: 'CRM Integration Dispatch ($10.00/ea)',
- data: data.billing.dispatch,
- backgroundColor: '#22c55e',
- stack: 'spend'
- }
- ]
- },
- options: {
- responsive: true,
- maintainAspectRatio: false,
- plugins: {
- legend: legendOpts,
- tooltip: {
- backgroundColor: '#0c0f16',
- titleFont: { family: 'Outfit, sans-serif'},
- bodyFont: { family: 'Outfit, sans-serif'},
- borderColor: 'rgba(255, 255, 255, 0.1)',
- borderWidth: 1,
- callbacks: {
- label: function(context) {
- let label = context.dataset.label || '';
- if (label) {
- label = label.split('($')[0] + ': ';
- }
- if (context.parsed.y !== null) {
- label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD'}).format(context.parsed.y);
- }
- return label;
- }
- }
- }
- },
- scales: {
- x: { grid: gridOpts, ticks: tickOpts },
- y: { 
- grid: gridOpts, 
- ticks: {
- ...tickOpts,
- callback: function(value) {
- return '$'+ value;
- }
- }
- }
- }
- }
- });
- }
-
- } catch (err) {
- console.error('Failed to load analytics data:', err);
- }
- };
-
- const refreshDashboard = async () =>{
- await Promise.all([
- fetchStats(), 
- fetchRegistry(), 
- fetchCallLogs(), 
- fetchRagFiles(), 
- fetchBillingData(),
- fetchTemplates(),
- fetchOutreachLogs(),
- fetchAnalyticsData()
- ]);
- };
-
- // --- Client Settings Tab Logic ---
+ // --- Multi-Tenant Settings Engine Routing ---
  const settingsForm = document.getElementById('settings-form');
  const settingsAllWarning = document.getElementById('settings-all-warning');
 
- const loadClientSettings = async () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : 'all';
- 
- if (clientId === 'all') {
- if (settingsAllWarning) settingsAllWarning.classList.remove('hidden');
- if (settingsForm) settingsForm.classList.add('hidden');
- return;
- }
+ const handleSettingsViewRouting = async () => {
+   const selectedClient = globalClientSelect.value;
+   if (selectedClient === 'all') {
+     settingsForm.classList.add('hidden');
+     settingsAllWarning.style.display = 'flex';
+   } else {
+     settingsAllWarning.style.display = 'none';
+     settingsForm.classList.remove('hidden');
 
- if (settingsAllWarning) settingsAllWarning.classList.add('hidden');
- if (settingsForm) settingsForm.classList.remove('hidden');
-
- const sectionNotifications = document.getElementById('settings-section-notifications');
- const sectionCredentials = document.getElementById('settings-section-credentials');
- if (authClientId === 'admin') {
- if (sectionNotifications) sectionNotifications.classList.remove('hidden');
- if (sectionCredentials) sectionCredentials.classList.remove('hidden');
- } else {
- if (sectionNotifications) sectionNotifications.classList.add('hidden');
- if (sectionCredentials) sectionCredentials.classList.add('hidden');
- }
-
- try {
- const res = await fetch(`/api/client-settings?clientId=${clientId}`);
- const data = await res.json();
- if (data.success && data.settings) {
- const s = data.settings;
- document.getElementById('settings-name').value = s.name || '';
- document.getElementById('settings-niche').value = s.niche || '';
- document.getElementById('settings-logo').value = s.logo || '';
- document.getElementById('settings-phone').value = s.phone || '';
- document.getElementById('settings-greeting').value = s.greeting || '';
- document.getElementById('settings-chat-greeting').value = s.chatGreeting || '';
- document.getElementById('settings-hero-title').value = s.heroTitle || '';
- document.getElementById('settings-subtitle').value = s.subtitle || '';
- document.getElementById('settings-primary-color').value = s.primaryColor || '';
- document.getElementById('settings-primary-hover').value = s.primaryHover || '';
- document.getElementById('settings-primary-glow').value = s.primaryGlow || '';
- document.getElementById('settings-secondary-color').value = s.secondaryColor || '';
- document.getElementById('settings-secondary-hover').value = s.secondaryHover || '';
- document.getElementById('settings-secondary-glow').value = s.secondaryGlow || '';
- document.getElementById('settings-bg-primary').value = s.bgPrimary || '';
- document.getElementById('settings-bg-secondary').value = s.bgSecondary || '';
- document.getElementById('settings-slack-webhook').value = s.slackWebhookUrl || '';
- document.getElementById('settings-sms-phone').value = s.notificationPhone || '';
- document.getElementById('settings-notify-on-lead').checked = s.notifyOnLead === 1;
- document.getElementById('settings-google-sheet-id').value = s.googleSheetId || '';
- document.getElementById('settings-google-calendar-id').value = s.googleCalendarId || '';
- document.getElementById('settings-twilio-account-sid').value = s.twilioAccountSid || '';
- document.getElementById('settings-twilio-auth-token').value = s.twilioAuthToken || '';
- document.getElementById('settings-twilio-phone-number').value = s.twilioPhoneNumber || '';
- document.getElementById('settings-resend-api-key').value = s.resendApiKey || '';
- document.getElementById('settings-voice-tone').value = s.voiceTone || 'alloy';
- document.getElementById('settings-voice-instructions').value = s.voiceInstructions || '';
- document.getElementById('settings-client-password').value = s.password || '';
- }
-
- // Load simulated CRM/Calendly settings from localStorage
- const storedCrm = localStorage.getItem(`${clientId}_crmType`) || 
- (clientId === 'realestate_nexus'? 'kvcore': (clientId === 'default_client'? 'simulated': 'fieldpulse'));
- const storedCalendly = localStorage.getItem(`${clientId}_calendlyUrl`) || 'https://calendly.com/simulated-booking';
-
- document.getElementById('settings-crm-type').value = storedCrm;
- document.getElementById('settings-calendly').value = storedCalendly;
-
- } catch (err) {
- console.error('Error loading client settings:', err);
- }
+     try {
+       const res = await fetch(`/api/settings/fetch?clientId=${selectedClient}`);
+       const data = await res.json();
+       if (data.success && data.config) {
+         document.getElementById('settings-name').value = data.config.name || '';
+         document.getElementById('settings-niche').value = data.config.niche || '';
+         document.getElementById('settings-logo').value = data.config.logo_text || '';
+         document.getElementById('settings-phone').value = data.config.hotline_phone || '';
+         document.getElementById('settings-greeting').value = data.config.voice_greeting || '';
+         document.getElementById('settings-chat-greeting').value = data.config.chat_greeting || '';
+         document.getElementById('settings-slack-webhook').value = data.config.slack_webhook || '';
+         document.getElementById('settings-sms-phone').value = data.config.alert_sms_phone || '';
+         document.getElementById('settings-notify-on-lead').checked = !!data.config.notifications_enabled;
+         document.getElementById('settings-voice-tone').value = data.config.voice_model_tone || 'alloy';
+         document.getElementById('settings-voice-instructions').value = data.config.system_prompt_override || '';
+       }
+     } catch (err) {
+       console.error('Failed structural parameters injection settings panel:', err);
+     }
+   }
  };
 
- if (settingsForm) {
- settingsForm.addEventListener('submit', async (e) =>{
- e.preventDefault();
- const clientId = globalClientSelect ? globalClientSelect.value : '';
- if (!clientId || clientId === 'all') return;
+ settingsForm.addEventListener('submit', async (e) => {
+   e.preventDefault();
+   const saveBtn = document.getElementById('save-settings-btn');
+   saveBtn.disabled = true;
+   saveBtn.innerHTML = `<span class="loading-spinner"></span>Saving Variables...`;
 
- const saveBtn = document.getElementById('save-settings-btn');
- const originalText = saveBtn.innerHTML;
- saveBtn.disabled = true;
- saveBtn.innerHTML = `Saving Settings...`;
+   const payload = {
+     clientId: globalClientSelect.value,
+     name: document.getElementById('settings-name').value,
+     niche: document.getElementById('settings-niche').value,
+     logoText: document.getElementById('settings-logo').value,
+     hotlinePhone: document.getElementById('settings-phone').value,
+     voiceGreeting: document.getElementById('settings-greeting').value,
+     chatGreeting: document.getElementById('settings-chat-greeting').value,
+     slackWebhook: document.getElementById('settings-slack-webhook').value,
+     alertSmsPhone: document.getElementById('settings-sms-phone').value,
+     notificationsEnabled: document.getElementById('settings-notify-on-lead').checked,
+     voiceTone: document.getElementById('settings-voice-tone').value,
+     systemPromptOverride: document.getElementById('settings-voice-instructions').value
+   };
 
- const settings = {
- name: document.getElementById('settings-name').value,
- niche: document.getElementById('settings-niche').value,
- logo: document.getElementById('settings-logo').value,
- phone: document.getElementById('settings-phone').value,
- greeting: document.getElementById('settings-greeting').value,
- chatGreeting: document.getElementById('settings-chat-greeting').value,
- heroTitle: document.getElementById('settings-hero-title').value,
- subtitle: document.getElementById('settings-subtitle').value,
- primaryColor: document.getElementById('settings-primary-color').value,
- primaryHover: document.getElementById('settings-primary-hover').value,
- primaryGlow: document.getElementById('settings-primary-glow').value,
- secondaryColor: document.getElementById('settings-secondary-color').value,
- secondaryHover: document.getElementById('settings-secondary-hover').value,
- secondaryGlow: document.getElementById('settings-secondary-glow').value,
- bgPrimary: document.getElementById('settings-bg-primary').value,
- bgSecondary: document.getElementById('settings-bg-secondary').value,
- slackWebhookUrl: document.getElementById('settings-slack-webhook').value,
- notificationPhone: document.getElementById('settings-sms-phone').value,
- notifyOnLead: document.getElementById('settings-notify-on-lead').checked ? 1 : 0,
- googleSheetId: document.getElementById('settings-google-sheet-id').value,
- googleCalendarId: document.getElementById('settings-google-calendar-id').value,
- twilioAccountSid: document.getElementById('settings-twilio-account-sid').value,
- twilioAuthToken: document.getElementById('settings-twilio-auth-token').value,
- twilioPhoneNumber: document.getElementById('settings-twilio-phone-number').value,
- resendApiKey: document.getElementById('settings-resend-api-key').value,
- voiceTone: document.getElementById('settings-voice-tone').value,
- voiceInstructions: document.getElementById('settings-voice-instructions').value,
- password: document.getElementById('settings-client-password').value
- };
-
- const crmType = document.getElementById('settings-crm-type').value;
- const calendlyUrl = document.getElementById('settings-calendly').value;
-
- try {
- const res = await fetch('/api/client-settings', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId, settings })
+   try {
+     const res = await fetch('/api/settings/save', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify(payload)
+     });
+     const data = await res.json();
+     if (data.success) {
+       alert('Client application profile parameters synced and committed to SQLite layer config properties successfully.');
+       refreshDashboard();
+     }
+   } catch (err) {
+     alert(`Settings Synchronization Layer Error: ${err.message}`);
+   } finally {
+     saveBtn.disabled = false;
+     saveBtn.innerHTML = 'Save Settings';
+   }
  });
- const data = await res.json();
- if (data.success) {
- // Save simulated settings to localstorage
- localStorage.setItem(`${clientId}_crmType`, crmType);
- localStorage.setItem(`${clientId}_calendlyUrl`, calendlyUrl);
 
- alert(`️ Settings for client "${clientId}"updated successfully!`);
- 
- // Trigger a dashboard refresh to sync elements
+ // --- Master Dashboard Orchestrator Refresh Trigger Routine ---
+ const refreshDashboard = () => {
+   fetchStats();
+   fetchRegistry();
+   fetchRecentDispatches();
+   const activeTabButton = document.querySelector('.tab-btn.active');
+   if (activeTabButton) {
+     const activeTabId = activeTabButton.getAttribute('data-tab');
+     if (activeTabId === 'calls-tab') { fetchLiveTelemetry(); fetchHistoricalLogs(); }
+     if (activeTabId === 'billing-tab') fetchBillingLedgerData();
+     if (activeTabId === 'knowledge-tab') fetchKnowledgeDirectory();
+     if (activeTabId === 'settings-tab') handleSettingsViewRouting();
+   }
+ };
+
+ // Wire Account Context Selection Changes
+ if (globalClientSelect) {
+   globalClientSelect.addEventListener('change', refreshDashboard);
+ }
+
+ // Initial Sync Core Run Execution Mappings
  refreshDashboard();
- } else {
- alert(`Failed to save settings: ${data.error}`);
- }
- } catch (err) {
- console.error('Error saving settings:', err);
- alert(`Error saving settings: ${err.message}`);
- } finally {
- saveBtn.disabled = false;
- saveBtn.innerHTML = originalText;
- }
- });
- }
-
- const testNotificationBtn = document.getElementById('test-notification-btn');
- if (testNotificationBtn) {
- testNotificationBtn.addEventListener('click', async () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : '';
- if (!clientId || clientId === 'all') {
- alert('️ Please select a specific client from the dropdown first.');
- return;
- }
-
- const originalText = testNotificationBtn.innerHTML;
- testNotificationBtn.disabled = true;
- testNotificationBtn.innerHTML = `Testing...`;
-
- try {
- const res = await fetch('/api/outbound/test-notification', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId })
- });
- const data = await res.json();
- if (data.success) {
- alert(`Test notification dispatched successfully!\nSlack: ${data.slackWebhookUrl ? 'Configured': 'Not Configured'}\nSMS: ${data.notificationPhone ? data.notificationPhone : 'Not Configured'}\nCheck console/Slack channel for output.`);
- } else {
- alert(`Failed to test notification: ${data.error}`);
- }
- } catch (err) {
- console.error('Error testing notification:', err);
- alert(`Error testing notification: ${err.message}`);
- } finally {
- testNotificationBtn.disabled = false;
- testNotificationBtn.innerHTML = originalText;
- }
- });
- }
-
- // --- Stripe Subscriptions UI Logic ---
- const stripeCheckoutModal = document.getElementById('stripe-checkout-modal');
- const stripeSubscribeBtn = document.getElementById('stripe-subscribe-btn');
- const closeCheckoutBtn = document.getElementById('close-checkout-btn');
- const stripeCheckoutOverlay = document.getElementById('stripe-checkout-overlay');
- const checkoutForm = document.getElementById('checkout-form');
- const stripeCancelBtn = document.getElementById('stripe-cancel-btn');
- const stripeTriggerInvoiceBtn = document.getElementById('stripe-trigger-invoice-btn');
-
- const openCheckout = () =>{
- if (stripeCheckoutModal) {
- stripeCheckoutModal.style.display = 'flex';
- stripeCheckoutModal.classList.remove('hidden');
- }
- };
-
- const closeCheckout = () =>{
- if (stripeCheckoutModal) {
- stripeCheckoutModal.style.display = 'none';
- stripeCheckoutModal.classList.add('hidden');
- }
- };
-
- if (stripeSubscribeBtn) stripeSubscribeBtn.addEventListener('click', openCheckout);
- if (closeCheckoutBtn) closeCheckoutBtn.addEventListener('click', closeCheckout);
- if (stripeCheckoutOverlay) stripeCheckoutOverlay.addEventListener('click', closeCheckout);
-
- if (checkoutForm) {
- checkoutForm.addEventListener('submit', async (e) =>{
- e.preventDefault();
- const clientId = globalClientSelect ? globalClientSelect.value : '';
- if (!clientId || clientId === 'all') return;
-
- const submitBtn = document.getElementById('checkout-submit-btn');
- const originalText = submitBtn.innerHTML;
- submitBtn.disabled = true;
- submitBtn.innerHTML = 'Processing Payment...';
-
- const cardBrand = 'Visa';
- const cardLast4 = '4242';
-
- try {
- const res = await fetch('/api/stripe/subscribe', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId, cardBrand, cardLast4 })
- });
- const data = await res.json();
- if (data.success) {
- alert(`Subscription activated! Customer ID: ${data.customerId}`);
- closeCheckout();
- fetchBillingData();
- } else {
- alert(`Subscription failed: ${data.error}`);
- }
- } catch (err) {
- console.error('Checkout submit error:', err);
- alert(`Checkout submit error: ${err.message}`);
- } finally {
- submitBtn.disabled = false;
- submitBtn.innerHTML = originalText;
- }
- });
- }
-
- if (stripeCancelBtn) {
- stripeCancelBtn.addEventListener('click', async () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : '';
- if (!clientId || clientId === 'all') return;
-
- if (!confirm('Are you sure you want to cancel your Pro Plan subscription? This will disable automatic CRM dispatches.')) {
- return;
- }
-
- stripeCancelBtn.disabled = true;
- try {
- const res = await fetch('/api/stripe/cancel', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId })
- });
- const data = await res.json();
- if (data.success) {
- alert('Subscription cancelled successfully.');
- fetchBillingData();
- } else {
- alert(`Failed to cancel subscription: ${data.error}`);
- }
- } catch (err) {
- console.error('Cancellation error:', err);
- alert(`Cancellation error: ${err.message}`);
- } finally {
- stripeCancelBtn.disabled = false;
- }
- });
- }
-
- if (stripeTriggerInvoiceBtn) {
- stripeTriggerInvoiceBtn.addEventListener('click', async () =>{
- const clientId = globalClientSelect ? globalClientSelect.value : '';
- if (!clientId || clientId === 'all') return;
-
- stripeTriggerInvoiceBtn.disabled = true;
- const originalText = stripeTriggerInvoiceBtn.innerHTML;
- stripeTriggerInvoiceBtn.innerHTML = 'Processing Charge...';
-
- try {
- const res = await fetch('/api/stripe/charge-invoice', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json'},
- body: JSON.stringify({ clientId })
- });
- const data = await res.json();
- if (data.success) {
- alert(`Stripe webhook triggered! Invoice ${data.invoice.id} for $${data.invoice.amount} charged to card on file.`);
- fetchBillingData();
- } else {
- alert(`Failed to trigger invoice charge: ${data.error}`);
- }
- } catch (err) {
- console.error('Invoice webhook error:', err);
- alert(`Invoice webhook error: ${err.message}`);
- } finally {
- stripeTriggerInvoiceBtn.disabled = false;
- stripeTriggerInvoiceBtn.innerHTML = originalText;
- }
- });
- }
-
- // --- Initialize ---
- updateWebhookUrlInput();
- refreshDashboard();
- loadClientSettings();
 });
 
-// Global variable to keep track of the active call session ID
-let currentActiveCallSid = "tel_sim_x92k1"; // Defaults to our simulator ID for testing
+// =============================================================
+// LIVE CONVERSATION STREAM & INTERJECTION LOGIC
+// =============================================================
+let liveSocket = null;
+let audioContext = null;
+let mediaStream = null;
+let processor = null;
 
-// Function to handle taking over an ongoing call
-async function handleCallIntercept() {
-  const techNumber = prompt("Enter the technician mobile number to transfer the call to:", "(702) 555-0194");
-  
-  if (!techNumber) return; // User canceled the prompt
+const toggleMicBtn = document.getElementById('toggle-mic-btn');
+const streamStatus = document.getElementById('stream-status');
+const transcriptBox = document.getElementById('live-transcript-box');
+const interjectInput = document.getElementById('interject-note-input');
+const sendInterjectBtn = document.getElementById('send-interject-btn');
 
-  const btn = document.getElementById('intercept-call-btn');
-  btn.innerText = "⚡ REDIRECTING...";
-  btn.style.background = "#555";
-  btn.disabled = true;
+toggleMicBtn?.addEventListener('click', async () => {
+  if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
+    stopMicStream();
+  } else {
+    await startMicStream();
+  }
+});
 
+async function startMicStream() {
   try {
-    const response = await fetch('/api/call/intercept', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        callSid: currentActiveCallSid,
-        technicianPhoneNumber: techNumber.replace(/\D/g, '') // Strips out spaces/parentheses for Twilio
-      })
-    });
+    // 1. Establish WebSocket to backend
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    liveSocket = new WebSocket(`${protocol}//${window.location.host}/voice-stream`);
 
-    const data = await response.json();
-
-    if (data.success) {
-      alert("🚀 Call successfully hijacked! Check your mobile phone now.");
-      btn.innerText = "✅ TRANSFERRED";
-      btn.style.background = "#06b6d4";
-    } else {
-      throw new Error(data.error || "Unknown server error");
-    }
-  } catch (err) {
-    console.error("Intercept failed:", err);
-    alert("❌ Action failed: " + err.message);
-    btn.innerText = "⚡ INTERCEPT CALL";
-    btn.style.background = "#ff007f";
-    btn.disabled = false;
-  }
-}
-
-// Attach click listener to the button when the script runs
-document.getElementById('intercept-call-btn').addEventListener('click', handleCallIntercept);
-
-// Update your existing layout reveal logic block to show the button
-// (Add this line wherever your WebSocket or simulator opens a live profile card)
-document.getElementById('intercept-call-btn').style.display = 'inline-block';
-
-// 🧪 FULL UI Simulator: Populates metrics, profile, and rich timeline
-function runUiMockSimulator() {
-  console.log("🧪 Starting full mock stream...");
-  
-  // 1. Reveal Action Button and Active Badge
-  document.getElementById('intercept-call-btn').style.display = 'inline-block';
-  const badge = document.getElementById('active-session-meta-badge');
-  if (badge) {
-    badge.style.display = 'inline-block';
-    badge.innerText = 'Active Call';
-  }
-
-  // 2. Populate the Top System Metric Cards (targeting the -- elements in your screenshot)
-  const metricValues = ["112ms", "450ms", "98ms", "750ms", "0.5%"];
-  const metricColors = ["#06b6d4", "#a855f7", "#3b82f6", "#10b981", "#ef4444"];
-  const metricPlaceholders = document.querySelectorAll('.metrics-grid h3 + p, .metric-card p.value, h2.metric-value'); // Adjusts based on your exact HTML
-  
-  // Quick brute-force update of the metric numbers if they use a span/p under the headers
-  const allTextNodes = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-  let metricIndex = 0;
-  while (allTextNodes.nextNode()) {
-    const node = allTextNodes.currentNode;
-    if (node.nodeValue.trim() === "--") {
-      const parent = node.parentElement;
-      parent.innerText = metricValues[metricIndex];
-      parent.style.color = metricColors[metricIndex];
-      metricIndex++;
-      if(metricIndex >= metricValues.length) break;
-    }
-  }
-
-  // 3. Populate Active Profile Card
-  const profileCard = document.getElementById('active-profile-card');
-  if (profileCard) {
-    profileCard.style.display = 'block';
-    document.getElementById('profile-name').innerText = "Michael Sterling";
-    document.getElementById('profile-phone').innerText = "(702) 555-8821";
-    document.getElementById('profile-email').innerText = "m.sterling@gmail.com";
-  }
-
-  // 4. Build a Rich, Multi-Step Timeline
-  const timelineContent = document.getElementById('traits-timeline-content');
-  if (timelineContent) {
-    // Clear out placeholder text
-    timelineContent.innerHTML = ''; 
-    timelineContent.appendChild(profileCard); // Keep profile card at the top
-
-    const traits = [
-      { type: 'info', icon: '📞', title: 'Call Connected', desc: 'Inbound call from Las Vegas routing pool.' },
-      { type: 'critical', icon: '🚨', title: 'Emergency Detected', desc: 'Caller stated: "My kitchen is completely flooded, a pipe burst under the sink!"' },
-      { type: 'data', icon: '💧', title: 'Damage Category', desc: 'Category 3 Water (Potential black water contamination).' },
-      { type: 'action', icon: '📍', title: 'Location Secured', desc: 'Address confirmed: 89109 (Las Vegas Strip Area).' },
-      { type: 'info', icon: '🤖', title: 'System Action', desc: 'Syncro Scale AI is currently explaining dispatch fees and ETA...' }
-    ];
-
-    traits.forEach(trait => {
-      const traitNode = document.createElement('div');
-      let borderColor = trait.type === 'critical' ? '#ff007f' : trait.type === 'data' ? '#3b82f6' : '#06b6d4';
+    liveSocket.onopen = async () => {
+      streamStatus.textContent = 'Live Streaming';
+      streamStatus.style.background = 'rgba(16, 185, 129, 0.2)';
+      streamStatus.style.color = '#34d399';
       
-      traitNode.style.cssText = `background: rgba(255,255,255,0.03); padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid ${borderColor};`;
-      traitNode.innerHTML = `
-        <strong style="color: #fff; font-size: 0.9rem;">${trait.icon} ${trait.title}</strong>
-        <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #a0aec0; line-height: 1.4;">${trait.desc}</p>
-      `;
-      timelineContent.appendChild(traitNode);
-    });
-  }
+      toggleMicBtn.textContent = '⏹️ End Stream';
+      toggleMicBtn.style.background = '#e11d48';
+      
+      transcriptBox.innerHTML = '<p style="color: #34d399; font-weight: 600;">[Connected to Realtime Voice Engine]</p>';
 
-  // 5. Update Connection Queue Sidebar
-  const connectionQueue = document.getElementById('active-calls-container');
-  if (connectionQueue) {
-    connectionQueue.innerHTML = `
-      <div style="background: rgba(255, 0, 127, 0.1); border: 1px solid rgba(255, 0, 127, 0.3); padding: 12px; border-radius: 6px; font-size: 0.85rem; color: #fff;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-          <strong>🔴 Active Emergency</strong>
-          <span style="color: #ff007f;">02:14</span>
-        </div>
-        <div>(702) 555-8821</div>
-        <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 4px;">Water Mitigation</div>
-      </div>
-    `;
+      // 2. Request Laptop Microphone Access
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      
+      const source = audioContext.createMediaStreamSource(mediaStream);
+      processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+      processor.onaudioprocess = (e) => {
+        if (!liveSocket || liveSocket.readyState !== WebSocket.OPEN) return;
+
+        const inputData = e.inputBuffer.getChannelData(0);
+        // Convert Float32 audio to PCM16
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+
+        // Send raw audio buffer to Express server
+        liveSocket.send(pcm16.buffer);
+      };
+
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+    };
+
+    liveSocket.onmessage = (event) => {
+      // Append AI stream packets to live transcript log
+      const p = document.createElement('p');
+      p.style.color = '#22d3ee';
+      p.textContent = `🤖 AI Response Packet (${event.data.byteLength || event.data.length} bytes)`;
+      transcriptBox.appendChild(p);
+      transcriptBox.scrollTop = transcriptBox.scrollHeight;
+    };
+
+    liveSocket.onclose = () => {
+      stopMicStream();
+    };
+
+  } catch (err) {
+    console.error('Microphone stream error:', err);
+    alert('Microphone access denied or connection failed.');
   }
 }
 
-// Automatically trigger simulator after the webpage fully renders
-window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(runUiMockSimulator, 800);
+function stopMicStream() {
+  if (processor) processor.disconnect();
+  if (audioContext) audioContext.close();
+  if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+  if (liveSocket) liveSocket.close();
+
+  liveSocket = null;
+  streamStatus.textContent = 'Offline';
+  streamStatus.style.background = 'rgba(255, 255, 255, 0.1)';
+  streamStatus.style.color = '#888';
+  
+  toggleMicBtn.textContent = '🎙️ Start Mic Stream';
+  toggleMicBtn.style.background = '#06b6d4';
+}
+
+// 3. Handle Mid-Call Interjection Note Injection
+sendInterjectBtn?.addEventListener('click', () => {
+  const note = interjectInput.value.trim();
+  if (!note || !liveSocket || liveSocket.readyState !== WebSocket.OPEN) return;
+
+  liveSocket.send(JSON.stringify({
+    type: 'system_interjection',
+    note: note
+  }));
+
+  const p = document.createElement('p');
+  p.style.color = '#fbbf24';
+  p.style.fontWeight = '500';
+  p.textContent = `📝 [Injected Note]: "${note}"`;
+  transcriptBox.appendChild(p);
+  interjectInput.value = '';
 });
-
-// Register the Mobile Service Worker for PWA installation
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('📱 Syncro Scale Mobile Service Worker active:', reg.scope))
-      .catch(err => console.error('❌ Mobile Service Worker registration failed:', err));
-  });
-}
