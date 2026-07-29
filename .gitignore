@@ -8,3 +8,4 @@ agentic_nexus.db
 syncro_scale.db
 *.dbpublic/recordings/*
 *.db
+public/recordings/

@@ -12,6 +12,15 @@ export type ProcessorResult = {
   outcome: 'booked' | 'disqualified' | 'poor-brand-fit' | 'booking-skipped';
 };
 
+export type DispatchResult = {
+  lead: Lead;
+  outcome: 'DISPATCH_LOGGED';
+  timestamp: string;
+};
+
+/**
+  Standard Sales Lead Qualification Pipeline
+ */
 export async function processLead(lead: Lead): Promise<ProcessorResult> {
   // Step 1: Qualify the lead
   const qualification = await QualifierAgent(lead);
@@ -39,4 +48,22 @@ export async function processLead(lead: Lead): Promise<ProcessorResult> {
   console.log(`[Processor] Booking — booked=${booking.booked} eventId=${booking.eventId}`);
 
   return { lead, qualification, evaluation, booking, outcome: 'booked' };
+}
+
+/**
+  Syncro Scale Emergency Dispatch Pipeline
+  Fast-lanes emergency calls directly to dispatch intake logging.
+ */
+export async function processEmergencyDispatch(lead: Lead): Promise<DispatchResult> {
+  console.log(`🚨 [Emergency Processor] Logging intake for call: ${lead.callSid}`);
+  console.log(`📍 Address: ${lead.propertyAddress || 'Unspecified'}`);
+  console.log(`⚠️ Issue: ${lead.emergencyIssue || 'Unspecified'}`);
+  console.log(`🔥 Severity: ${lead.severityLevel || 'HIGH'}`);
+
+  // Here you can insert into SQLite/DB or emit a priority notification
+  return {
+    lead,
+    outcome: 'DISPATCH_LOGGED',
+    timestamp: new Date().toISOString(),
+  };
 }

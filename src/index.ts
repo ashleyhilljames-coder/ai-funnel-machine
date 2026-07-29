@@ -1,11 +1,12 @@
 import dotenv from 'dotenv';
 dotenv.config();
-
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import express from 'express';
 import app from './server.js';
 import telephonyRouter from './routes/telephony';
+import { processEmergencyDispatch } from './processor.js';
+import crypto from 'crypto';
 
 declare global {
   namespace Express {
@@ -80,13 +81,13 @@ browserWss.on('connection', (ws: WebSocket) => {
         const companyName = "Syncro Scale Property Management & Mitigation Services";
 
         const sessionUpdate = {
-          type: 'session.update',
-          session: {
-            modalities: ['text', 'audio'],
-            voice: 'alloy',
-            input_audio_format: 'pcm16',
-            output_audio_format: 'pcm16',
-            instructions: `You are a strict, automated Emergency Dispatcher for ${companyName}. You are a professional receptionist, NOT a technician.
+      type: 'session.update',
+      session: {
+        modalities: ['text', 'audio'],
+        voice: 'alloy',
+        input_audio_format: 'g711_ulaw',
+        output_audio_format: 'g711_ulaw',
+        instructions: `You are a strict, automated Emergency Dispatcher for ${companyName}. You are a professional receptionist, NOT a technician.
 
 CRITICAL RESTRICTION: NO DIY ADVICE
 - NEVER give the caller DIY instructions, repair steps, or advice.
@@ -96,9 +97,28 @@ WORKFLOW STEPS
 1. Greeting: Say exactly: "Thank you for calling ${companyName}. How can we help you with your property today?"
 2. Intake: Listen to the emergency.
 3. Information Gathering: Calmly ask for their property address and confirmation of the severity.
-4. Wrap-up: State that emergency dispatch has been initiated and a team is on the way.`
+4. Log Lead: Call the log_emergency_lead tool as soon as you have gathered the property address, emergency issue, and severity level.
+5. Wrap-up: State that emergency dispatch has been initiated and a team is on the way.`,
+        tools: [
+          {
+            type: 'function',
+            name: 'log_emergency_lead',
+            description: 'Logs emergency dispatch intake information directly into system records.',
+            parameters: {
+              type: 'object',
+              properties: {
+                propertyAddress: { type: 'string', description: 'Full property address provided by caller' },
+                emergencyIssue: { type: 'string', description: 'Brief description of the emergency' },
+                severityLevel: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] }
+              },
+              required: ['propertyAddress', 'emergencyIssue', 'severityLevel']
+            }
           }
-        };
+        ],
+        tool_choice: 'auto'
+      }
+    };
+
         openAiWs.send(JSON.stringify(sessionUpdate));
         console.log('⚡ [OpenAI] Browser Session configuration sent.');
       }
@@ -165,6 +185,52 @@ twilioWss.on('connection', (ws: WebSocket) => {
   let streamSid: string | null = null;
   let callSid: string | null = null;
 
+  // STEP 1: Establish OpenAI Realtime Connection for this phone call
+  const model = "gpt-4o-realtime-preview-2024-10-01";
+  const openAiWs = new WebSocket(
+    `wss://api.openai.com/v1/realtime?model=${model}`,
+    {
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "OpenAI-Beta": "realtime=v1"
+      }
+    }
+  );
+
+  // Configure OpenAI Session for Twilio Format (g711_ulaw)
+  openAiWs.on('open', () => {
+    console.log('🧠 [OpenAI] Connected to Realtime AI Brain (Twilio Call Session).');
+    
+    setTimeout(() => {
+      if (openAiWs.readyState === WebSocket.OPEN) {
+        const companyName = "Syncro Scale Property Management & Mitigation Services";
+
+        const sessionUpdate = {
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            voice: 'alloy',
+            input_audio_format: 'g711_ulaw',  // Matches Twilio 8kHz stream
+            output_audio_format: 'g711_ulaw', // Matches Twilio 8kHz stream
+            instructions: `You are a strict, automated Emergency Dispatcher for ${companyName}. You are a professional receptionist, NOT a technician.
+
+CRITICAL RESTRICTION: NO DIY ADVICE
+- NEVER give the caller DIY instructions, repair steps, or advice.
+- Giving advice is strictly FORBIDDEN. Your only response to an emergency is to take down their information for dispatch.
+
+WORKFLOW STEPS
+1. Greeting: Say exactly: "Thank you for calling ${companyName}. How can we help you with your property today?"
+2. Intake: Listen to the emergency.
+3. Information Gathering: Calmly ask for their property address and confirmation of the severity.
+4. Wrap-up: State that emergency dispatch has been initiated and a team is on the way.`
+          }
+        };
+        openAiWs.send(JSON.stringify(sessionUpdate));
+      }
+    }, 250);
+  });
+
+  // STEP 2: Handle incoming Twilio messages & send audio to OpenAI
   ws.on('message', (message: string) => {
     try {
       const data = JSON.parse(message);
@@ -178,17 +244,43 @@ twilioWss.on('connection', (ws: WebSocket) => {
           streamSid = data.start.streamSid;
           callSid = data.start.callSid;
           console.log(`📞 [Twilio Stream]: Stream started. CallSid: ${callSid}, StreamSid: ${streamSid}`);
+
+          // Broadcast call initiation to Dashboard
+          broadcastToDashboard({
+            event: 'call_started',
+            callSid,
+            streamSid,
+            timestamp: new Date().toISOString()
+          });
           break;
 
         case 'media':
-          // Raw mu-law audio chunk from caller (data.media.payload)
+          // Pipe raw caller audio chunk (g711_ulaw base64) directly to OpenAI
+          if (openAiWs && openAiWs.readyState === WebSocket.OPEN) {
+            openAiWs.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: data.media.payload,
+            }));
+          }
+          break;
+
+        case 'clear':
+          // Caller interrupted/barged in — tell OpenAI to cancel current response
+          console.log('⚡ [Twilio Stream]: Barge-in / Clear event received.');
+          if (openAiWs && openAiWs.readyState === WebSocket.OPEN) {
+            openAiWs.send(JSON.stringify({ type: 'response.cancel' }));
+          }
           break;
 
         case 'stop':
           console.log(`📞 [Twilio Stream]: Call ended. StreamSid: ${streamSid}`);
-          break;
-
-        default:
+          broadcastToDashboard({
+            event: 'call_ended',
+            callSid,
+            streamSid,
+            timestamp: new Date().toISOString()
+          });
+          if (openAiWs.readyState === WebSocket.OPEN) openAiWs.close();
           break;
       }
     } catch (err) {
@@ -196,9 +288,81 @@ twilioWss.on('connection', (ws: WebSocket) => {
     }
   });
 
+  // STEP 3: Handle OpenAI AI Audio responses & send to Twilio
+  openAiWs.on('message', (data) => {
+    try {
+      const response = JSON.parse(data.toString());
+
+      // Handle tool call execution from OpenAI
+    if (response.type === 'response.function_call_arguments.done') {
+      if (response.name === 'log_emergency_lead') {
+        const args = JSON.parse(response.arguments);
+        
+        const emergencyLead = {
+          id: crypto.randomUUID(),
+          callSid: callSid || 'UNKNOWN_CALL',
+          source: 'TELEPHONY_DISPATCH',
+          funnelStep: 'DISPATCH_INTAKE',
+          propertyAddress: args.propertyAddress,
+          emergencyIssue: args.emergencyIssue,
+          severityLevel: args.severityLevel,
+          dispatchStatus: 'PENDING' as const,
+          metadata: {},
+          createdAt: new Date().toISOString()
+        };
+
+        processEmergencyDispatch(emergencyLead).then((result) => {
+          console.log('✅ [Dispatch Logged Successfully]:', result);
+
+          broadcastToDashboard({
+            event: 'lead_logged',
+            lead: emergencyLead
+          });
+        });
+
+        openAiWs.send(JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'function_call_output',
+            call_id: response.call_id,
+            output: JSON.stringify({ success: true, message: 'Dispatch logged' })
+          }
+        }));
+        
+        openAiWs.send(JSON.stringify({ type: 'response.create' }));
+      }
+    }
+
+      if (response.type === 'response.audio.delta' && response.delta) {
+        if (ws.readyState === WebSocket.OPEN && streamSid) {
+          const twilioPayload = {
+            event: 'media',
+            streamSid: streamSid,
+            media: {
+              payload: response.delta // Already g711_ulaw base64
+            }
+          };
+          ws.send(JSON.stringify(twilioPayload));
+
+          // Broadcast active speech indicator to Dashboard
+          broadcastToDashboard({
+            event: 'ai_speaking',
+            callSid
+          });
+        }
+      }
+    } catch (err) {
+      console.error('❌ [OpenAI -> Twilio Stream Error]:', err);
+    }
+  });
+
+  // Cleanup on call termination
   ws.on('close', () => {
     console.log('🔌 [Twilio Stream] Call disconnected.');
+    if (openAiWs.readyState === WebSocket.OPEN) openAiWs.close();
   });
+
+  openAiWs.on('error', (err) => console.error('❌ OpenAI Twilio WS Error:', err));
 });
 
 const PORT = process.env.PORT || 3000;
