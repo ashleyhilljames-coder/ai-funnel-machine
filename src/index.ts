@@ -23,6 +23,7 @@ app.use(
     },
   })
 );
+app.use(express.urlencoded({ extended: true }));
 app.use('/api/telephony', telephonyRouter);
 
 const httpServer = http.createServer(app);
@@ -242,8 +243,11 @@ WORKFLOW STEPS
 
         case 'start':
           streamSid = data.start.streamSid;
-          callSid = data.start.callSid;
+callSid = data.start.callSid;
           console.log(`📞 [Twilio Stream]: Stream started. CallSid: ${callSid}, StreamSid: ${streamSid}`);
+openAiWs.send(JSON.stringify({
+  type: 'response.create'
+}));
 
           // Broadcast call initiation to Dashboard
           broadcastToDashboard({
@@ -289,15 +293,38 @@ WORKFLOW STEPS
   });
 
   // STEP 3: Handle OpenAI AI Audio responses & send to Twilio
-  openAiWs.on('message', (data) => {
-    try {
-      const response = JSON.parse(data.toString());
+openAiWs.on('message', (data) => {
+  try {
+    const response = JSON.parse(data.toString());
 
-      // Handle tool call execution from OpenAI
+    // 🔍 Log all OpenAI incoming events
+    console.log('🤖 [OpenAI Event]:', response.type);
+
+    // 1. Audio streaming back to Twilio
+    if (response.type === 'response.audio.delta' && response.delta) {
+      if (ws.readyState === WebSocket.OPEN && streamSid) {
+        const twilioPayload = {
+          event: 'media',
+          streamSid: streamSid,
+          media: {
+            payload: response.delta // g711_ulaw base64
+          }
+        };
+        ws.send(JSON.stringify(twilioPayload));
+
+        // Broadcast active speech indicator to Dashboard
+        broadcastToDashboard({
+          event: 'ai_speaking',
+          callSid
+        });
+      }
+    }
+
+    // 2. Handle tool call execution from OpenAI
     if (response.type === 'response.function_call_arguments.done') {
       if (response.name === 'log_emergency_lead') {
         const args = JSON.parse(response.arguments);
-        
+
         const emergencyLead = {
           id: crypto.randomUUID(),
           callSid: callSid || 'UNKNOWN_CALL',
@@ -320,6 +347,7 @@ WORKFLOW STEPS
           });
         });
 
+        // Acknowledge function call completion back to OpenAI
         openAiWs.send(JSON.stringify({
           type: 'conversation.item.create',
           item: {
@@ -328,34 +356,14 @@ WORKFLOW STEPS
             output: JSON.stringify({ success: true, message: 'Dispatch logged' })
           }
         }));
-        
+
         openAiWs.send(JSON.stringify({ type: 'response.create' }));
       }
     }
-
-      if (response.type === 'response.audio.delta' && response.delta) {
-        if (ws.readyState === WebSocket.OPEN && streamSid) {
-          const twilioPayload = {
-            event: 'media',
-            streamSid: streamSid,
-            media: {
-              payload: response.delta // Already g711_ulaw base64
-            }
-          };
-          ws.send(JSON.stringify(twilioPayload));
-
-          // Broadcast active speech indicator to Dashboard
-          broadcastToDashboard({
-            event: 'ai_speaking',
-            callSid
-          });
-        }
-      }
-    } catch (err) {
-      console.error('❌ [OpenAI -> Twilio Stream Error]:', err);
-    }
-  });
-
+  } catch (err) {
+    console.error('❌ [OpenAI -> Twilio Stream Error]:', err);
+  }
+});
   // Cleanup on call termination
   ws.on('close', () => {
     console.log('🔌 [Twilio Stream] Call disconnected.');
