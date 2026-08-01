@@ -375,7 +375,7 @@ openAiWs.on('message', (data) => {
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 AI Funnel Machine listening on port ${PORT}`);
+  console.log(`🚀 syncro-scale-engine listening on port ${PORT}`);
 });
 
 async function closeSubscriptions() { console.log('Shutting down...'); }

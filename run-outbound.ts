@@ -5,108 +5,111 @@ import { IntakeRouter } from './src/outbound/intakeRouter';
 import { LeadGuard } from './src/outbound/leadGuard';
 import * as path from 'path';
 
+// Helper for API rate-limit throttling
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function runMainOutboundPipeline() {
   const outboundEngine = new OutboundProcessor();
   const scraper = new LeadScraper();
   const router = new IntakeRouter();
   const guard = new LeadGuard();
 
-  const clientArg = process.argv.find(arg => arg.startsWith('--client='));
+  const clientArg = process.argv.find((arg) => arg.startsWith('--client='));
   const clientId = clientArg ? clientArg.split('=')[1] : 'default_client';
 
   const pendingFiles = router.getPendingCSVFiles();
 
-  // Enforce Modern Web Guidance availability protocols
-  const isLanguageModelAvailable = typeof globalThis !== 'undefined' && 'LanguageModel' in globalThis;
-
   if (pendingFiles.length === 0) {
-      console.log("=====================================================================");
-      console.log(`[Agentic Nexus] Tenant Workspace: [${clientId.toUpperCase()}] - No pending CSV files found.`);
-      console.log("👉 Tip: Drop your lead sheets directly into the 'intake/' directory to begin.");
-      console.log("=====================================================================");
-      return;
+    console.log("=====================================================================");
+    console.log(`[Syncro Scale] Tenant Workspace: [${clientId.toUpperCase()}] - No pending CSV files found.`);
+    console.log("👉 Tip: Drop lead sheets into the 'intake/' directory to begin.");
+    console.log("=====================================================================");
+    return;
   }
 
-  // Modern Web Guidance: Execute safety check before processing
-  if (!isLanguageModelAvailable) {
-      console.log(`[Agentic Nexus] Local LanguageModel API unavailable. Routing to Remote Gemini API fallback...`);
-  } else {
-      console.log(`[Agentic Nexus] Local LanguageModel API detected. Executing with low-latency local context...`);
-  }
+  console.log(`📂 [Syncro Scale] Engine Activated | Tenant: [${clientId.toUpperCase()}]`);
+  console.log(`📂 Queued Files: ${pendingFiles.length}`);
 
-  console.log(`📂 [Agentic Nexus] Multi-Tenant Router Activated | Profile: [${clientId.toUpperCase()}]`);
-  console.log(`📂 Found ${pendingFiles.length} file(s) waiting in queue.`);
-  
   let totalSuccessfulRows = 0;
   let totalFailedRows = 0;
   let totalSkippedDuplicates = 0;
-  let totalEmailsDispatched = 0; 
+  let totalEmailsDispatched = 0;
   const startTime = Date.now();
 
-  try {
-    for (const filePath of pendingFiles) {
-      const currentFileName = path.basename(filePath);
-      console.log(`\n🚀 Starting Processing Queue for file: [${currentFileName}]`);
-      console.log("-------------------------------------------------------------------------");
+  for (const filePath of pendingFiles) {
+    const currentFileName = path.basename(filePath);
+    console.log(`\n🚀 Processing File: [${currentFileName}]`);
+    console.log("-------------------------------------------------------------------------");
 
+    try {
       const rawLeads = await scraper.parseCSVFile(filePath);
-      console.log(`📊 Parsed ${rawLeads.length} records from data source.`);
+      console.log(`📊 Parsed ${rawLeads.length} records.`);
 
       for (let i = 0; i < rawLeads.length; i++) {
         const currentLead = rawLeads[i];
-        
+
+        // 1. Persistent Deduplication Check
         if (currentLead.email && guard.isDuplicateForClient(currentLead.email, clientId)) {
           totalSkippedDuplicates++;
-          console.log(`⚠️  [TENANT GUARD] Duplicate flagged for Client [${clientId.toUpperCase()}]! Email: ${currentLead.email}. Skipping...`);
-          continue; 
+          console.log(`⚠️ [SYNCRO GUARD] Duplicate flagged for [${clientId.toUpperCase()}]: ${currentLead.email}. Skipping.`);
+          continue;
         }
 
-        console.log(`🌀 Processing row [${i + 1}/${rawLeads.length}]: ${currentLead.businessName}`);
-        
-        // This triggers the new processor, which uses OpenAI and sends immediately via Resend
-        const result = await outboundEngine.processRawOutboundLead(clientId, currentLead);
+        console.log(`🌀 Processing [${i + 1}/${rawLeads.length}]: ${currentLead.businessName || currentLead.email}`);
 
-        if (result.status === 'contacted' && result.sequence) {
-          totalSuccessfulRows++;
-          totalEmailsDispatched++; // Track successful Resend firings directly
-          guard.registerClientLead(currentLead.email, clientId, false, currentLead.businessName, currentLead.niche);
-          
-          console.log(`✅ Success! Tracking ID: ${result.prospect.id}`);
-          console.log(`⚡ [RESEND] Personal note dispatched directly to ${currentLead.email}!`);
-          console.log(""); 
-        } else {
+        // 2. Safe Execution with API Rate Throttling
+        try {
+          const result = await outboundEngine.processRawOutboundLead(clientId, currentLead);
+
+          if (result.status === 'contacted' && result.sequence) {
+            totalSuccessfulRows++;
+            totalEmailsDispatched++;
+            
+            // Immediately register state to disk/db so crashes don't cause duplicate sends
+            guard.registerClientLead(currentLead.email, clientId, false, currentLead.businessName, currentLead.niche);
+
+            console.log(`✅ Success! Tracking ID: ${result.prospect?.id || 'N/A'}`);
+            console.log(`⚡ [RESEND] Dispatched to ${currentLead.email}`);
+          } else {
+            totalFailedRows++;
+            console.error(`❌ Dispatch Failed: ${result.error || 'Unknown status response'}`);
+          }
+        } catch (leadError: any) {
           totalFailedRows++;
-          console.error(`❌ Row Warning: ${result.error}\n`);
+          console.error(`❌ Lead Processing Exception (${currentLead.email}): ${leadError.message}`);
         }
+
+        // 3. Mandatory 250ms throttle delay between API calls to protect OpenAI / Resend quotas
+        await sleep(250);
       }
 
+      // Archive file only after processing completes safely
       router.archiveProcessedFile(filePath);
+
+    } catch (fileError: any) {
+      console.error(`💥 Failed processing file [${currentFileName}]: ${fileError.message}`);
     }
-
-    const totalTimeSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
-    const idledHoursSaved = ((totalSuccessfulRows * 15) / 60).toFixed(2);
-
-    // 📊 EXPANDED NETWORKING CONTROL REPORT DASHBOARD
-    console.log("=========================================================================");
-    console.log(` ⚡ AGENTIC NEXUS — LIVE NETWORK DISPATCH CONTROL REPORT ⚡ `);
-    console.log("=========================================================================");
-    console.log(` 🏢 Client Profile:   ${clientId.toUpperCase()}`);
-    console.log(` 🏁 Status:           COMPLETED RUN OVER ALL QUEUES`);
-    console.log(` 📅 Timestamp:        ${new Date().toLocaleString()}`);
-    console.log(` ⏱️  Execution Time:   ${totalTimeSeconds} seconds`);
-    console.log("-------------------------------------------------------------------------");
-    console.log(` 📈 Total Files Run:  ${pendingFiles.length} source file(s)`);
-    console.log(` ✅ Campaigns Written: ${totalSuccessfulRows} total scripts generated`);
-    console.log(` 📧 Live Dispatches:  ${totalEmailsDispatched} emails successfully sent via Resend`);
-    console.log(` ⚠️  Client Protected: ${totalSkippedDuplicates} duplicate record(s) isolated`);
-    console.log(` ❌ Skipped/Failed:   ${totalFailedRows} records total`);
-    console.log("-------------------------------------------------------------------------");
-    console.log(` 🧠 Automation Value: ~${idledHoursSaved} hours of copywriting labor saved`);
-    console.log("=========================================================================\n");
-
-  } catch (error: any) {
-    console.error(`💥 Critical failure executing job: ${error.message}`);
   }
+
+  const totalTimeSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
+  const idledHoursSaved = ((totalSuccessfulRows * 15) / 60).toFixed(2);
+
+  // 📊 SYNCRO SCALE CONTROL REPORT
+  console.log("=========================================================================");
+  console.log(` ⚡ SYNCRO SCALE — LIVE NETWORK DISPATCH CONTROL REPORT ⚡ `);
+  console.log("=========================================================================");
+  console.log(` 🏢 Client Profile:   ${clientId.toUpperCase()}`);
+  console.log(` 🏁 Status:           COMPLETED`);
+  console.log(` ⏱️  Execution Time:   ${totalTimeSeconds}s`);
+  console.log("-------------------------------------------------------------------------");
+  console.log(` 📈 Source Files:     ${pendingFiles.length}`);
+  console.log(` ✅ Campaigns Built:  ${totalSuccessfulRows}`);
+  console.log(` 📧 Live Dispatches:  ${totalEmailsDispatched} via Resend`);
+  console.log(` ⚠️  Duplicates Blocked: ${totalSkippedDuplicates}`);
+  console.log(` ❌ Failed Records:   ${totalFailedRows}`);
+  console.log("-------------------------------------------------------------------------");
+  console.log(` 🧠 Value Generated: ~${idledHoursSaved} hours saved`);
+  console.log("=========================================================================\n");
 }
 
 runMainOutboundPipeline();
