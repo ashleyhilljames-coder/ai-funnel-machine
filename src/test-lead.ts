@@ -12,6 +12,7 @@ const sampleLead: Lead = {
   company: 'Acme Corp',
   source: 'landing-page',
   funnelStep: 'opt-in',
+  dispatchStatus: 'PENDING',
   metadata: { campaign: 'summer-launch', adVariant: 'B' },
   createdAt: new Date().toISOString(),
 };
