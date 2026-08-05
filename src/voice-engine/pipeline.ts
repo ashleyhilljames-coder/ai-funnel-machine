@@ -33,6 +33,11 @@ export class VoicePipeline {
   private ttsFirstChunkTime: number = 0;
   private interrupted: boolean = false;
   
+  // TTS Queue
+  private audioQueue: Buffer[] = [];
+  private isProcessingAudioQueue: boolean = false;
+  private currentFullResponse: string = '';
+  
   // Active call callback
   private onTranscriptUpdate?: (transcript: string[]) => void;
 
@@ -209,47 +214,86 @@ Be conversational, helpful, and concise (respond briefly in 1-2 sentences). Alwa
     this.sttReceivedTime = performance.now();
 
     try {
-      // 1. Run conversational LLM turn
-      const responseText = await this.runLLM();
-      this.llmFinishedTime = performance.now();
-      
-      this.conversationHistory.push({
-        role: 'assistant',
-        content: responseText
+      this.currentFullResponse = '';
+      this.ttsFirstChunkTime = 0;
+      this.llmFinishedTime = 0;
+
+      // 1. Run conversational LLM turn with streaming
+      const stream = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: this.conversationHistory,
+        stream: true
       });
 
-      if (this.onTranscriptUpdate) {
-        this.onTranscriptUpdate(this.getTranscriptList());
+      let clauseBuffer = '';
+      for await (const chunk of stream) {
+        if (this.interrupted) break;
+        const delta = chunk.choices[0]?.delta?.content || '';
+        if (delta) {
+          clauseBuffer += delta;
+          this.currentFullResponse += delta;
+
+          if (/[.!?;\n]/.test(delta)) {
+             const clause = clauseBuffer.trim();
+             if (clause) {
+               this.queueAssistantResponse(clause);
+             }
+             clauseBuffer = '';
+          }
+        }
       }
 
-      // 2. Play response via Deepgram Aura TTS
-      console.log(`[VoicePipeline] Agent: "${responseText}"`);
-      await this.playAssistantResponse(responseText);
+      if (!this.interrupted && clauseBuffer.trim()) {
+        this.queueAssistantResponse(clauseBuffer.trim());
+      }
+      
+      this.llmFinishedTime = performance.now();
+      
+      // Update history once done
+      if (this.currentFullResponse.trim()) {
+        this.conversationHistory.push({
+          role: 'assistant',
+          content: this.currentFullResponse.trim()
+        });
+        
+        if (this.onTranscriptUpdate) {
+          this.onTranscriptUpdate(this.getTranscriptList());
+        }
+
+        // Compute metrics
+        const sttLatency = this.sttReceivedTime - this.userStoppedSpeakingTime;
+        const llmProcessing = this.llmFinishedTime - this.sttReceivedTime;
+        const ttsLatency = this.ttsFirstChunkTime ? this.ttsFirstChunkTime - this.sttReceivedTime : 0;
+        const timeToFirstAudio = this.ttsFirstChunkTime ? this.ttsFirstChunkTime - this.userStoppedSpeakingTime : 0;
+
+        // Log telemetry metrics to db
+        leadGuard.insertVoiceTelemetryLog({
+          callSid: this.callSid,
+          sttLatencyMs: Math.max(0, sttLatency),
+          llmProcessingMs: Math.max(0, llmProcessing),
+          ttsLatencyMs: Math.max(0, ttsLatency),
+          timeToFirstAudioMs: Math.max(0, timeToFirstAudio),
+          interrupted: this.interrupted
+        });
+
+        console.log(`[Telemetry] Latencies: STT: ${sttLatency.toFixed(1)}ms | LLM: ${llmProcessing.toFixed(1)}ms | TTS: ${ttsLatency.toFixed(1)}ms | TTFT: ${timeToFirstAudio.toFixed(1)}ms`);
+      }
 
       // 3. Trigger profile extraction asynchronously in the background
       this.runBackgroundProfileExtractor();
 
     } catch (err) {
       console.error("[VoicePipeline] Error in conversational loop:", err);
+      this.triggerFallback();
     }
   }
 
   /**
-   * Call OpenAI Chat Completion
+   * Queue audio for a text clause
    */
-  private async runLLM(): Promise<string> {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: this.conversationHistory
-    });
-
-    return response.choices[0]?.message?.content || "I'm sorry, I encountered an issue. Can you repeat that?";
-  }
-
-  /**
-   * Fetch audio from Deepgram Aura TTS and stream to Twilio
-   */
-  private async playAssistantResponse(text: string) {
+  private async queueAssistantResponse(text: string) {
+    if (this.interrupted) return;
+    
     const apiKey = process.env.DEEPGRAM_API_KEY;
     if (!apiKey) {
       console.error("[VoicePipeline] DEEPGRAM_API_KEY not set.");
@@ -257,8 +301,6 @@ Be conversational, helpful, and concise (respond briefly in 1-2 sentences). Alwa
     }
 
     try {
-      // Fetch audio from Deepgram Aura
-      // asteria voice is professional and friendly
       const response = await fetch(
         `https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mulaw&sample_rate=8000&container=none`,
         {
@@ -278,80 +320,117 @@ Be conversational, helpful, and concise (respond briefly in 1-2 sentences). Alwa
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = Buffer.from(arrayBuffer);
       
-      // Capture first audio generation latency
-      this.ttsFirstChunkTime = performance.now();
-      
-      // Compute metrics
-      const sttLatency = this.sttReceivedTime - this.userStoppedSpeakingTime;
-      const llmProcessing = this.llmFinishedTime - this.sttReceivedTime;
-      const ttsLatency = this.ttsFirstChunkTime - this.llmFinishedTime;
-      const timeToFirstAudio = this.ttsFirstChunkTime - this.userStoppedSpeakingTime;
+      if (!this.ttsFirstChunkTime) {
+        this.ttsFirstChunkTime = performance.now();
+      }
 
-      // Log telemetry metrics to db
-      leadGuard.insertVoiceTelemetryLog({
-        callSid: this.callSid,
-        sttLatencyMs: Math.max(0, sttLatency),
-        llmProcessingMs: Math.max(0, llmProcessing),
-        ttsLatencyMs: Math.max(0, ttsLatency),
-        timeToFirstAudioMs: Math.max(0, timeToFirstAudio),
-        interrupted: this.interrupted
-      });
-
-      console.log(`[Telemetry] Latencies: STT: ${sttLatency.toFixed(1)}ms | LLM: ${llmProcessing.toFixed(1)}ms | TTS: ${ttsLatency.toFixed(1)}ms | TTFT: ${timeToFirstAudio.toFixed(1)}ms`);
-
-      // Start streaming audio chunks to Twilio
-      this.streamAudioBuffer(audioBuffer);
+      this.audioQueue.push(audioBuffer);
+      this.processAudioQueue();
 
     } catch (err) {
-      console.error("[VoicePipeline] TTS generation or playback failed:", err);
+      console.error("[VoicePipeline] TTS generation failed:", err);
     }
   }
 
   /**
-   * Stream audio buffer to Twilio WebSocket in 20ms chunks (160 bytes of mulaw)
+   * Play a full assistant response (used for greeting)
    */
-  private streamAudioBuffer(buffer: Buffer) {
-    // If there is any active playback, stop it first
-    this.stopAudioPlayback();
+  private async playAssistantResponse(text: string) {
+    await this.queueAssistantResponse(text);
+  }
 
-    this.isPlaying = true;
-    this.currentResponseAudioBuffer = buffer;
-    this.currentResponseOffset = 0;
+  private async processAudioQueue() {
+    if (this.isProcessingAudioQueue) return;
+    this.isProcessingAudioQueue = true;
 
-    const chunkSize = 160; // 20ms of 8000Hz 8-bit mulaw
-    const interval = 20; // 20ms
-
-    const sendNext = () => {
-      if (!this.isPlaying || !this.currentResponseAudioBuffer) return;
-
-      if (this.currentResponseOffset >= this.currentResponseAudioBuffer.length) {
-        this.isPlaying = false;
-        this.currentResponseAudioBuffer = null;
-        return;
+    while (this.audioQueue.length > 0) {
+      if (this.interrupted) {
+        this.audioQueue = [];
+        break;
       }
+      
+      const buffer = this.audioQueue.shift();
+      if (buffer) {
+        await this.streamAudioBufferSync(buffer);
+      }
+    }
+    this.isProcessingAudioQueue = false;
+  }
 
-      const chunk = this.currentResponseAudioBuffer.subarray(
-        this.currentResponseOffset,
-        this.currentResponseOffset + chunkSize
-      );
-      this.currentResponseOffset += chunkSize;
+  /**
+   * Stream audio buffer to Twilio WebSocket in 20ms chunks (160 bytes of mulaw) synchronously
+   */
+  private async streamAudioBufferSync(buffer: Buffer): Promise<void> {
+    return new Promise((resolve) => {
+      this.isPlaying = true;
+      let offset = 0;
+      const chunkSize = 160; // 20ms of 8000Hz 8-bit mulaw
+      const interval = 20;
 
-      const mediaMessage = {
-        event: 'media',
-        streamSid: this.streamSid,
-        media: {
-          payload: chunk.toString('base64')
+      const sendNext = () => {
+        if (!this.isPlaying || this.interrupted) {
+          this.isPlaying = false;
+          resolve();
+          return;
         }
+
+        if (offset >= buffer.length) {
+          this.isPlaying = false;
+          resolve();
+          return;
+        }
+
+        const chunk = buffer.subarray(offset, offset + chunkSize);
+        offset += chunkSize;
+
+        const mediaMessage = {
+          event: 'media',
+          streamSid: this.streamSid,
+          media: {
+            payload: chunk.toString('base64')
+          }
+        };
+
+        if (this.twilioWs.readyState === WebSocket.OPEN) {
+          this.twilioWs.send(JSON.stringify(mediaMessage));
+        }
+
+        this.playTimeout = setTimeout(sendNext, interval);
       };
 
-      if (this.twilioWs.readyState === WebSocket.OPEN) {
-        this.twilioWs.send(JSON.stringify(mediaMessage));
-      }
+      sendNext();
+    });
+  }
 
-      this.playTimeout = setTimeout(sendNext, interval);
-    };
+  /**
+   * TwiML Fallback when APIs fail
+   */
+  private async triggerFallback() {
+    console.log(`[VoicePipeline] Triggering TwiML fallback for call ${this.callSid}`);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const twilio = require('twilio');
+      const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      await twilioClient.calls(this.callSid).update({
+        twiml: '<Response><Say>I apologize, but I am experiencing technical difficulties. Please clearly state your name, address, and your emergency issue after the tone. We will dispatch a team immediately.</Say><Record maxLength="60" /></Response>'
+      });
+      // End the local pipeline since Twilio will take over with TwiML
+      this.destroy();
+    } catch (err) {
+      console.error("[VoicePipeline] Failed to trigger TwiML fallback:", err);
+    }
+  }
 
-    sendNext();
+  /**
+   * Call OpenAI Chat Completion
+   */
+  private async runLLM(): Promise<string> {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: this.conversationHistory
+    });
+
+    return response.choices[0]?.message?.content || "I'm sorry, I encountered an issue. Can you repeat that?";
   }
 
   /**
@@ -359,6 +438,7 @@ Be conversational, helpful, and concise (respond briefly in 1-2 sentences). Alwa
    */
   private stopAudioPlayback() {
     this.isPlaying = false;
+    this.audioQueue = []; // Clear queue
     if (this.playTimeout) {
       clearTimeout(this.playTimeout);
       this.playTimeout = null;
@@ -372,6 +452,15 @@ Be conversational, helpful, and concise (respond briefly in 1-2 sentences). Alwa
         streamSid: this.streamSid
       }));
     }
+  }
+
+  /**
+   * Admin takeover to immediately halt the AI
+   */
+  public takeover() {
+    console.log(`[VoicePipeline] Admin takeover for call ${this.callSid}`);
+    this.interrupted = true;
+    this.stopAudioPlayback();
   }
 
   /**

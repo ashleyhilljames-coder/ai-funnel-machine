@@ -34,6 +34,25 @@ dashboardWss.on('connection', (ws: WebSocket) => {
   }));
   ws.send(JSON.stringify({ event: 'active_sessions', sessions: currentSessions }));
 
+  ws.on('message', (message: WebSocket.Data) => {
+    try {
+      const msg = JSON.parse(message.toString());
+      if (msg.event === 'takeover' && msg.callId) {
+        console.log(`[Dashboard Socket] Received takeover for call ${msg.callId}`);
+        const session = activeVoiceSessions.get(msg.callId);
+        if (session && session.pipeline) {
+          session.pipeline.takeover();
+          broadcastToDashboards({
+            event: 'call_takeover',
+            callId: msg.callId
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[Dashboard Socket] Error parsing message:', e);
+    }
+  });
+
   ws.on('close', () => {
     dashboardClients.delete(ws);
     console.log('[Dashboard Socket] Client disconnected.');

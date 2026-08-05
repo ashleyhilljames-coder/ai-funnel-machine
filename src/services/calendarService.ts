@@ -120,6 +120,15 @@ export async function getAvailableSlots(clientId?: string): Promise<string[]> {
  * Parses the custom slot string back into an ISO Start & End date.
  */
 function parseSlotToDates(slotStr: string): { start: Date; end: Date } {
+  // 1. Try strict ISO 8601 parsing first
+  const isoDate = new Date(slotStr);
+  if (!isNaN(isoDate.getTime()) && slotStr.includes('T')) {
+    const start = isoDate;
+    const end = new Date(start.getTime() + 30 * 60 * 1000); // 30 min duration
+    return { start, end };
+  }
+
+  // 2. Fallback to custom slot format parsing
   const regex = /([A-Za-z]+),\s+([A-Za-z]+)\s+(\d+)\s+at\s+(\d+):(\d+)\s+(AM|PM)/i;
   const match = slotStr.match(regex);
 

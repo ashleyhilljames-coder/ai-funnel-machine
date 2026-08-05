@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { LeadGuard } from '../outbound/leadGuard';
 
 export interface CallRecord {
   conversationId: string;
@@ -11,46 +10,26 @@ export interface CallRecord {
   createdAt: string;
 }
 
-const CSV_FILE_PATH = path.join(process.cwd(), 'mitigation_leads.csv');
-
-// Helper to escape CSV values safely
-function formatCsvField(field: string): string {
-  const sanitized = field.replace(/"/g, '""');
-  return `"${sanitized}"`;
-}
+const guard = new LeadGuard();
 
 export async function saveCallRecord(record: CallRecord): Promise<void> {
   console.log(`[DB Service] Storing record for conversation: ${record.conversationId}`);
 
-  // 1. Write to local CSV ledger (mitigation_leads.csv)
   try {
-    const fileExists = fs.existsSync(CSV_FILE_PATH);
-    const csvHeader = 'Timestamp,ConversationID,CallerPhone,Duration,Status,Summary\n';
+    const clientId = 'default_client';
+    guard.createCallLog(record.conversationId, 'telephony', clientId);
     
-    const row = [
-      record.createdAt,
-      record.conversationId,
-      record.callerPhone || 'Unknown',
-      `${record.callDuration}s`,
-      record.status,
-      record.summary.replace(/\r?\n|\r/g, ' ')
-    ].map(formatCsvField).join(',') + '\n';
-
-    if (!fileExists) {
-      fs.writeFileSync(CSV_FILE_PATH, csvHeader + row, 'utf8');
-    } else {
-      fs.appendFileSync(CSV_FILE_PATH, row, 'utf8');
-    }
-    console.log('[CSV Ledger] Appended lead to mitigation_leads.csv');
+    const transcriptString = record.transcript.map(t => `[${t.role}]: ${t.message}`).join('\n');
+    
+    guard.updateCallLog(record.conversationId, {
+      callerPhone: record.callerPhone || 'Unknown',
+      durationSeconds: record.callDuration,
+      transcript: transcriptString,
+      agentActivity: record.summary,
+      actionTaken: record.status,
+    });
+    console.log('[SQLite Ledger] Inserted lead into call_logs');
   } catch (err) {
-    console.error('[CSV Ledger Error] Failed to write CSV row:', err);
+    console.error('[SQLite Ledger Error] Failed to write call log:', err);
   }
-
-  // 2. Placeholder hook for Supabase / Postgres client
-  // When your Supabase credentials (SUPABASE_URL, SUPABASE_KEY) are in process.env, insert directly:
-  /*
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-    // await supabase.from('calls').insert([record]);
-  }
-  */
 }

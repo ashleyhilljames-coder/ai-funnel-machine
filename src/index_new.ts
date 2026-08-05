@@ -329,7 +329,7 @@ httpServer.on('upgrade', (request, socket, head) =>{
  mediaStreamWss.handleUpgrade(request, socket, head, (ws) =>{
  mediaStreamWss.emit('connection', ws, request);
  });
- } else if (url.pathname === '/dashboard-stream') {
+ } else if (url.pathname === '/ws/telephony-monitor' || url.pathname === '/dashboard-stream') {
  dashboardWss.handleUpgrade(request, socket, head, (ws) =>{
  dashboardWss.emit('connection', ws, request);
  });

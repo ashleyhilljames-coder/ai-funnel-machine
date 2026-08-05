@@ -769,6 +769,37 @@ Execution Time: ${data.executionTime} seconds
  let pollingIntervalId = null;
  let activeSelectedSessionId = null;
 
+ // --- Telephony WebSocket ---
+ const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+ let telephonyWs;
+ function connectTelephonyWs() {
+   telephonyWs = new WebSocket(`${wsProtocol}//${window.location.host}/ws/telephony-monitor`);
+   
+   telephonyWs.onopen = () => {
+     console.log('Connected to Live Telephony Monitor WS');
+   };
+
+   telephonyWs.onmessage = (event) => {
+     try {
+       const msg = JSON.parse(event.data);
+       if (msg.event === 'active_sessions') {
+         // initial state handled here if needed, but we rely on fetchLiveTelemetry for full metrics currently
+         fetchLiveTelemetry();
+       } else if (msg.event === 'transcript_updated' || msg.event === 'call_connected' || msg.event === 'call_disconnected' || msg.event === 'call_takeover') {
+         fetchLiveTelemetry();
+       }
+     } catch (e) {
+       console.error('Error parsing telephony WS message:', e);
+     }
+   };
+
+   telephonyWs.onclose = () => {
+     setTimeout(connectTelephonyWs, 3000); // Reconnect
+   };
+ }
+ connectTelephonyWs();
+
+
  const fetchLiveTelemetry = async () => {
    try {
      const clientId = globalClientSelect ? globalClientSelect.value : 'all';
@@ -886,18 +917,16 @@ Execution Time: ${data.executionTime} seconds
 
    if (confirm('⚡ Warn: Intercepting this call will disconnect the automated Voice Agent pipeline and route the live WebRTC/Twilio stream node directly to your workstation layout. Proceed?')) {
      try {
-       const res = await fetch('/api/telemetry/intercept-session', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ sessionId })
-       });
-       const data = await res.json();
-       if (data.success) {
-         alert('Pipeline detached successfully. Audio channel linked directly. You are now live with the customer.');
+       if (telephonyWs && telephonyWs.readyState === WebSocket.OPEN) {
+         telephonyWs.send(JSON.stringify({
+           event: 'takeover',
+           callId: sessionId
+         }));
+         alert('Pipeline detached successfully. Takeover command issued.');
          resetLiveInsightsPanel();
          fetchLiveTelemetry();
        } else {
-         throw new Error(data.error);
+         throw new Error('WebSocket not connected');
        }
      } catch (err) {
        alert(`Could not intercept active call pipeline: ${err.message}`);

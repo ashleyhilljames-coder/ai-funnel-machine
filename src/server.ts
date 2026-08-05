@@ -1,8 +1,28 @@
 import express from 'express';
 import path from 'path';
 import { ingestLead } from './ingest.js';
-import { ZodError, type ZodIssue } from 'zod';
+import { z, ZodError, type ZodIssue } from 'zod';
 import twilio from 'twilio'; // 📞 Added the Twilio package import
+
+export const CallInterceptSchema = z.object({
+  callSid: z.string().min(1),
+  technicianPhoneNumber: z.string().min(1)
+});
+
+export const CampaignOutreachSchema = z.object({
+  email: z.string().email(),
+  clientId: z.string().min(1),
+  name: z.string().optional(),
+  subject: z.string().optional(),
+  body: z.string().optional(),
+  template: z.string().optional()
+});
+
+export const IntakeSchema = z.object({
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional()
+}).passthrough();
 
 const app = express();
 
@@ -10,8 +30,30 @@ const app = express();
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // Global Middleware
-app.use(express.json());
+const rateLimitMap = new Map<string, number[]>();
+app.use((req, res, next) => {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 100;
+  
+  if (!rateLimitMap.has(ip)) {
+    rateLimitMap.set(ip, []);
+  }
+  
+  const timestamps = rateLimitMap.get(ip)!;
+  const validTimestamps = timestamps.filter(ts => now - ts < windowMs);
+  
+  if (validTimestamps.length >= maxRequests) {
+    return res.status(429).json({ error: 'Too Many Requests' });
+  }
+  
+  validTimestamps.push(now);
+  rateLimitMap.set(ip, validTimestamps);
+  next();
+});
 
+app.use(express.json());
 const publicPath = path.resolve(process.cwd(), 'public');
 app.use(express.static(publicPath));
 
@@ -27,8 +69,17 @@ console.log(`📡 Static assets serving from: ${publicPath}`);
 
 // 📋 Standard Intake Route
 app.post('/api/intake', async (req, res) => {
-  console.log('📥 Received standard intake payload:', req.body);
-  res.status(200).json({ status: 'received' });
+  try {
+    const data = IntakeSchema.parse(req.body);
+    console.log('📥 Received standard intake payload');
+    res.status(200).json({ status: 'received' });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      res.status(400).json({ success: false, error: 'Validation failed' });
+      return;
+    }
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
 });
 
 // 🚀 Production Intake Route with Zod Validation & Pub/Sub Publishing
@@ -64,13 +115,9 @@ app.post('/api/leads', async (req, res) => {
 
 // ⚡ LIVE INTERCEPT ROUTE: Instantly hands a streaming AI call over to a live field tech's cell phone
 app.post('/api/call/intercept', async (req, res) => {
-  const { callSid, technicianPhoneNumber } = req.body;
-
-  if (!callSid || !technicianPhoneNumber) {
-    return res.status(400).json({ error: 'Missing callSid or technicianPhoneNumber' });
-  }
-
   try {
+    const { callSid, technicianPhoneNumber } = CallInterceptSchema.parse(req.body);
+
     console.log(`⚡ Intercept triggered. Redirecting active call ${callSid} to technician phone...`);
 
     // Signal Twilio to hot-swap the stream away from the AI engine straight to the human line
@@ -87,6 +134,9 @@ app.post('/api/call/intercept', async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Call redirect successfully initialized.' });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.issues });
+    }
     console.error('❌ Failed to intercept Twilio call:', error);
     res.status(500).json({ error: 'Failed to execute call takeover layer.' });
   }
@@ -95,14 +145,7 @@ app.post('/api/call/intercept', async (req, res) => {
 // 📧 CAMPAIGN OUTREACH ROUTE
 app.post('/api/send-campaign-outreach', async (req: any, res: any) => {
   try {
-    const { email, name, clientId, subject, body, template } = req.body;
-
-    if (!email || !clientId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields: email and clientId are mandatory.' 
-      });
-    }
+    const { email, name, clientId, subject, body, template } = CampaignOutreachSchema.parse(req.body);
 
     console.log(`[Campaign Outreach] Dispatching campaign to ${email} for client ${clientId}`);
     
@@ -112,6 +155,13 @@ app.post('/api/send-campaign-outreach', async (req: any, res: any) => {
     });
 
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Validation failed',
+        details: error.issues
+      });
+    }
     console.error('❌ Campaign outreach failure:', error);
     return res.status(500).json({ 
       success: false, 

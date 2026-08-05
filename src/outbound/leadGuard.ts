@@ -9,6 +9,8 @@ export class LeadGuard {
  // Sets up a single database binary file right in your root directory
  const dbPath = path.join(__dirname, '../../syncro_scale.db');
  this.db = new Database(dbPath);
+ this.db.pragma('journal_mode = WAL');
+ this.db.pragma('synchronous = NORMAL');
  this.initializeSchema();
  }
 
@@ -52,6 +54,8 @@ export class LeadGuard {
  dispatch_count INTEGER DEFAULT 0
  );
 
+ CREATE INDEX IF NOT EXISTS idx_call_logs_client_phone ON call_logs(client_id, caller_phone);
+
  CREATE TABLE IF NOT EXISTS knowledge_base (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  client_id TEXT NOT NULL,
@@ -92,7 +96,7 @@ export class LeadGuard {
  resend_api_key TEXT DEFAULT '',
  voice_instructions TEXT DEFAULT '',
  voice_tone TEXT DEFAULT 'alloy',
- password TEXT DEFAULT 'password123',
+ password TEXT,
  updated_at TEXT NOT NULL
  );
 
@@ -137,6 +141,8 @@ export class LeadGuard {
     observations TEXT DEFAULT '[]',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE INDEX IF NOT EXISTS idx_customer_phone_email ON customer_profiles(phone, email);
 
   CREATE TABLE IF NOT EXISTS voice_telemetry_logs (
     id TEXT PRIMARY KEY,
@@ -225,14 +231,17 @@ export class LeadGuard {
  this.db.exec(`ALTER TABLE client_settings ADD COLUMN voice_tone TEXT DEFAULT 'alloy'`);
  } catch (e) {}
  try {
- this.db.exec(`ALTER TABLE client_settings ADD COLUMN password TEXT DEFAULT 'password123'`);
+ this.db.exec(`ALTER TABLE client_settings ADD COLUMN password TEXT`);
  } catch (e) {}
  try {
- // Update existing records with correct default passwords
- this.db.prepare("UPDATE client_settings SET password = 'restoration123'WHERE client_id = 'restoration_lv'").run();
- this.db.prepare("UPDATE client_settings SET password = 'roofing123'WHERE client_id = 'roofing_sc'").run();
- this.db.prepare("UPDATE client_settings SET password = 'property123'WHERE client_id = 'property_apex'").run();
- this.db.prepare("UPDATE client_settings SET password = 'realestate123'WHERE client_id = 'realestate_nexus'").run();
+ // Set passwords securely via an environment variable if missing
+ const defaultPass = process.env.DEFAULT_CLIENT_PASSWORD || '';
+ if (defaultPass) {
+   this.db.prepare("UPDATE client_settings SET password = ? WHERE client_id = 'restoration_lv'").run(defaultPass);
+   this.db.prepare("UPDATE client_settings SET password = ? WHERE client_id = 'roofing_sc'").run(defaultPass);
+   this.db.prepare("UPDATE client_settings SET password = ? WHERE client_id = 'property_apex'").run(defaultPass);
+   this.db.prepare("UPDATE client_settings SET password = ? WHERE client_id = 'realestate_nexus'").run(defaultPass);
+ }
  } catch (e) {}
 
  // Seed mock data if tables are empty
@@ -1729,6 +1738,16 @@ Write a short, direct, and completely hype-free Day 1 cold outreach email.
       return this.db.prepare(`SELECT * FROM customer_profiles WHERE email = ?`).get(email);
     } catch (err) {
       console.error("Failed to get customer profile:", err);
+      return null;
+    }
+  }
+
+  public getCustomerProfileByPhone(phone: string) {
+    try {
+      if (!phone) return null;
+      return this.db.prepare(`SELECT * FROM customer_profiles WHERE phone = ?`).get(phone);
+    } catch (err) {
+      console.error("Failed to get customer profile by phone:", err);
       return null;
     }
   }

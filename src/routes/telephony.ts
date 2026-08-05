@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import twilio from 'twilio';
 import { saveCallRecord, CallRecord } from '../services/db';
 import { triggerDispatchAlert } from '../services/dispatchAlert';
-import fs from 'fs';
-import path from 'path';
+import { LeadGuard } from '../outbound/leadGuard';
+
 const router = Router();
+const leadGuard = new LeadGuard();
 
 // ==========================================
 // 0. INCOMING CALL TWIML HANDLER: /api/telephony/incoming
@@ -12,7 +14,20 @@ const router = Router();
 // Directs Twilio to open a WebSocket stream with our server.
 // ==========================================
 router.post('/incoming', (req: Request, res: Response) => {
+  const twilioSignature = req.headers['x-twilio-signature'] as string;
+  const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
   const host = req.headers.host;
+
+  if (twilioAuthToken && twilioSignature) {
+    const url = `https://${host}${req.originalUrl || req.url}`;
+    const isValid = twilio.validateRequest(twilioAuthToken, twilioSignature, url, req.body || {});
+    if (!isValid) {
+      console.warn('[Twilio Webhook]: Invalid signature.');
+      return res.status(401).send('Unauthorized');
+    }
+  } else if (twilioAuthToken && !twilioSignature) {
+    return res.status(401).send('Unauthorized');
+  }
 
   // TwiML response instructing Twilio to open a bi-directional Media Stream
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -43,15 +58,27 @@ router.post('/prospect-context', async (req: Request, res: Response) => {
 
     const cleanPhone = callerPhone.replace(/[^\d+]/g, '');
 
-    // TODO: Connect to your DB (e.g. const prospect = await db.findProspect(cleanPhone);)
-    const prospect: any = null; // Set to null until DB is connected so it falls through cleanly
+    const prospect: any = leadGuard.getCustomerProfileByPhone(cleanPhone);
 
     if (prospect) {
+      let notes = 'No prior notes.';
+      let address = 'Unknown';
+      
+      try {
+        const obs = JSON.parse(prospect.observations || '[]');
+        if (obs.length > 0) notes = obs.join(' | ');
+      } catch (e) {}
+
+      try {
+        const traits = JSON.parse(prospect.extracted_traits || '{}');
+        if (traits.address) address = traits.address;
+      } catch (e) {}
+
       return res.json({
         found: true,
-        prospect_name: prospect.name,
-        past_notes: prospect.notes || 'No prior notes.',
-        system_instruction: `Greet ${prospect.name} warmly. Property address on file: ${prospect.address || 'Unknown'}.`,
+        prospect_name: prospect.name || 'Valued Caller',
+        past_notes: notes,
+        system_instruction: `Greet ${prospect.name || 'Valued Caller'} warmly. Property address on file: ${address}.`,
       });
     }
 
@@ -78,8 +105,12 @@ router.post('/post-call', async (req: Request, res: Response) => {
     const signature = req.headers['x-elevenlabs-signature'] as string;
     const webhookSecret = process.env.ELEVENLABS_WEBHOOK_SECRET;
 
-    if (webhookSecret && signature) {
-      const rawBody = (req as any).rawBody ? (req as any).rawBody.toString('utf-8') : '';
+    if (webhookSecret) {
+      if (!signature) {
+        return res.status(401).json({ error: 'Unauthorized: Missing signature' });
+      }
+      
+      const rawBody = (req as any).rawBody ? (req as any).rawBody.toString('utf-8') : JSON.stringify(req.body);
 
       const expectedSignature = crypto
         .createHmac('sha256', webhookSecret)
@@ -92,7 +123,7 @@ router.post('/post-call', async (req: Request, res: Response) => {
       }
     }
 
-    console.log('[Post-Call Data Received]:', JSON.stringify(req.body, null, 2));
+    // console.log removed to prevent credential exposure
 
     const { type, data } = req.body;
 
@@ -117,6 +148,23 @@ router.post('/post-call', async (req: Request, res: Response) => {
       // 1. Save to CSV & Database
       await saveCallRecord(callRecord);
 
+      // Extract details from data_collection
+      const collectedData = data.analysis?.data_collection_results || {};
+      const prospectName = collectedData.prospect_name?.value || 'Unknown';
+      const address = collectedData.property_address?.value || 'Unknown';
+      const extractedTraits = JSON.stringify({ address, ...collectedData });
+      const observations = data.analysis?.transcript_summary || summary;
+      
+      const email = collectedData.email?.value || `${callerPhone.replace(/[^0-9]/g, '')}@placeholder.com`;
+
+      leadGuard.upsertCustomerProfile({
+        email,
+        name: prospectName,
+        phone: callerPhone,
+        extractedTraits,
+        observations
+      });
+
       // 2. Trigger Instant Notification Alert
       await triggerDispatchAlert(callRecord);
     }
@@ -134,36 +182,17 @@ router.post('/post-call', async (req: Request, res: Response) => {
 // ==========================================
 router.get('/recent-calls', (_req, res) => {
   try {
-    const csvPath = path.resolve(__dirname, '../../mitigation_leads.csv');
-
-    if (!fs.existsSync(csvPath)) {
-      return res.json({ success: true, calls: [] });
-    }
-
-    const fileData = fs.readFileSync(csvPath, 'utf8').trim();
-    const lines = fileData.split('\n');
-
-    if (lines.length <= 1) {
-      return res.json({ success: true, calls: [] });
-    }
-
-    // Header is line 0; parse data rows (newest first)
-    const records = lines.slice(1).reverse().map((line) => {
-      // Regex matches standard CSV comma splits while respecting quotes
-      const matches = line.match(/(?:[^\",]|\"[^\"]*\")+/g) || [];
-      const clean = matches.map(val => val.replace(/^"|"$/g, '').replace(/""/g, '"'));
-
-      return {
-        createdAt: clean[0] || '',
-        conversationId: clean[1] || '',
-        callerPhone: clean[2] || '',
-        callDuration: clean[3] || '',
-        status: clean[4] || 'pending',
-        summary: clean[5] || 'No summary available.'
-      };
-    });
-
-    return res.json({ success: true, calls: records });
+    const logs = leadGuard.getAllCallLogs();
+    const calls = logs.map(log => ({
+      createdAt: log.started_at,
+      conversationId: log.id,
+      callerPhone: log.caller_phone || 'Unknown',
+      callDuration: `${log.duration_seconds || 0}s`,
+      status: log.action_taken || 'pending',
+      summary: log.agent_activity || 'No summary available.'
+    }));
+    
+    return res.json({ success: true, calls });
   } catch (err) {
     console.error('[API Error] Failed to fetch recent calls:', err);
     return res.status(500).json({ success: false, error: 'Failed to read call logs' });

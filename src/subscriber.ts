@@ -22,6 +22,8 @@ export function startSubscriber(handler: LeadHandler): () => Promise<void> {
     const lead = parseLead(message);
 
     if (!lead) {
+      // Unrecoverable parsing/validation error (e.g. malformed JSON or Zod schema failure).
+      // Ack to clear the bad payload from the queue.
       message.ack();
       return;
     }
@@ -30,6 +32,8 @@ export function startSubscriber(handler: LeadHandler): () => Promise<void> {
       await handler(lead);
       message.ack();
     } catch (err) {
+      // Recoverable processing/handler failure (e.g. network timeout or API rate limit).
+      // Nack to trigger GCP Pub/Sub auto-retry mechanisms.
       console.error('Handler failed, nacking message', { leadId: lead.id, err });
       message.nack();
     }
