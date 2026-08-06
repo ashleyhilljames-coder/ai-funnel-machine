@@ -1,11 +1,12 @@
 node_modules/
 dist/
 .env
+.env.*
+!.env.example
 *.js.map
 gcp-key.json
 google-credentials.json
 agentic_nexus.db
 syncro_scale.db
-*.dbpublic/recordings/*
 *.db
 public/recordings/

@@ -1,8 +1,12 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
-import { ingestLead } from './ingest.js';
+import twilio from 'twilio';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { z, ZodError, type ZodIssue } from 'zod';
-import twilio from 'twilio'; // 📞 Added the Twilio package import
+import { ingestLead } from './ingest.js';
+import leadRoutes from './routes/leads';
 
 export const CallInterceptSchema = z.object({
   callSid: z.string().min(1),
@@ -26,36 +30,31 @@ export const IntakeSchema = z.object({
 
 const app = express();
 
+// Security Enhancements
+app.disable('x-powered-by');
+app.use(helmet({ contentSecurityPolicy: false }));
+
 // Initialize the Twilio Client using your safe environment credentials
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// Global Middleware
-const rateLimitMap = new Map<string, number[]>();
-app.use((req, res, next) => {
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const maxRequests = 100;
-  
-  if (!rateLimitMap.has(ip)) {
-    rateLimitMap.set(ip, []);
-  }
-  
-  const timestamps = rateLimitMap.get(ip)!;
-  const validTimestamps = timestamps.filter(ts => now - ts < windowMs);
-  
-  if (validTimestamps.length >= maxRequests) {
-    return res.status(429).json({ error: 'Too Many Requests' });
-  }
-  
-  validTimestamps.push(now);
-  rateLimitMap.set(ip, validTimestamps);
-  next();
+// Express Rate Limiter for API routes
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too Many Requests' },
 });
 
-app.use(express.json());
+app.use('/api', apiLimiter);
+
+app.use(express.json({ limit: '10kb' }));
 const publicPath = path.resolve(process.cwd(), 'public');
 app.use(express.static(publicPath));
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 app.get('/dashboard.html', (req, res) => {
   res.sendFile(path.join(publicPath, 'dashboard.html'));
@@ -112,6 +111,8 @@ app.post('/api/leads', async (req, res) => {
     });
   }
 });
+
+app.use('/api/leads', leadRoutes);
 
 // ⚡ LIVE INTERCEPT ROUTE: Instantly hands a streaming AI call over to a live field tech's cell phone
 app.post('/api/call/intercept', async (req, res) => {
@@ -237,6 +238,19 @@ app.get('/api/billing/ledger', async (req: any, res: any) => {
     console.error('❌ Billing fetch error:', error);
     return res.status(500).json({ success: false, error: 'Failed to fetch billing data' });
   }
+});
+
+// Global Express Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('❌ Global Server Error:', err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  const statusCode = typeof err.status === 'number' ? err.status : (typeof err.statusCode === 'number' ? err.statusCode : 500);
+  return res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Internal server error',
+  });
 });
 
 export default app;

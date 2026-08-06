@@ -7,7 +7,7 @@ import app from './server.js';
 import telephonyRouter from './routes/telephony';
 import { processEmergencyDispatch } from './processor.js';
 import crypto from 'crypto';
-
+import leadRoutes from './routes/leads';
 declare global {
   namespace Express {
     interface Request {
@@ -23,9 +23,10 @@ app.use(
     },
   })
 );
+
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/telephony', telephonyRouter);
-
+app.use('/api/leads', leadRoutes);
 const httpServer = http.createServer(app);
 
 // Helper to push real-time events to all connected dashboard tabs
