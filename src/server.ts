@@ -9,6 +9,7 @@ import { z, ZodError, type ZodIssue } from 'zod';
 import { ingestLead } from './ingest.js';
 import leadRoutes from './routes/leads';
 
+
 export const CallInterceptSchema = z.object({
   callSid: z.string().min(1),
   technicianPhoneNumber: z.string().min(1)
@@ -83,13 +84,27 @@ app.post('/api/intake', async (req, res) => {
   try {
     const data = IntakeSchema.parse(req.body);
     console.log('📥 Received standard intake payload');
-    res.status(200).json({ status: 'received' });
+
+  // Ingest lead into SQLite & pub/sub pipeline
+    const result = await ingestLead({
+      email: data.email || 'no-email@intake.local',
+      ...data
+    } as any);
+    return res.status(200).json({
+      status: 'received',
+      leadId: (result as any)?.lead?.id || (result as any)?.id || null
+    });
   } catch (error) {
     if (error instanceof ZodError) {
-      res.status(400).json({ success: false, error: 'Validation failed' });
-      return;
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed'
+      });
     }
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
   }
 });
 
