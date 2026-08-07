@@ -28,19 +28,19 @@ export class OutboundProcessor {
 
   private getNicheSystemPrompt(niche: any): string {
     if (!niche || typeof niche !== 'string') {
-      return `You are an elite B2B copywriter representing Ashley from Agentic Nexus. Keep it under 4 sentences. Focus on 24/7 AI intake.`;
+      return `You are an elite B2B copywriter representing Ashley from Syncro Scale. Keep it under 4 sentences. Focus on 24/7 AI intake.`;
     }
 
     const cleanNiche = niche.toLowerCase().trim();
 
     if (cleanNiche.includes('roof') || cleanNiche.includes('mitigation') || cleanNiche.includes('contractor')) {
-      return `You are an elite B2B copywriter for Agentic Nexus writing to contractors. 
+      return `You are an elite B2B copywriter for Syncro Scale writing to contractors. 
       Focus on 24/7 emergency response and capturing leads that usually hit voicemail. 
       Tone: Peer-to-peer, zero hype, under 4 sentences. 
       Ask if they use automation for after-hours calls.`;
     }
 
-    return `You are an elite B2B copywriter for Agentic Nexus. Tone is conversational and direct. Focus on saving manual labor.`;
+    return `You are an elite B2B copywriter for Syncro Scale. Tone is conversational and direct. Focus on saving manual labor.`;
   }
 
   public async generateLeadDraft(
