@@ -83,22 +83,30 @@ console.log(`📡 Static assets serving from: ${publicPath}`);
 app.post('/api/intake', async (req, res) => {
   try {
     const data = IntakeSchema.parse(req.body);
-    console.log('📥 Received standard intake payload');
+    console.log('📥 Received standard intake payload:', data);
 
-  // Ingest lead into SQLite & pub/sub pipeline
-    const result = await ingestLead({
+    // Build valid IngestInput payload
+    const payload = {
       email: data.email || 'no-email@intake.local',
-      ...data
-    } as any);
+      clientId: (req.body.clientId as string) || 'default_client',
+      name: data.name || 'Unknown',
+      phone: data.phone || 'N/A',
+      service: (req.body.service as string) || 'General'
+    };
+
+    const result = await ingestLead(payload as any);
+
     return res.status(200).json({
       status: 'received',
-      leadId: (result as any)?.lead?.id || (result as any)?.id || null
+      leadId: result.lead.id,
+      messageId: result.messageId
     });
   } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({
         success: false,
-        error: 'Validation failed'
+        error: 'Validation failed',
+        details: error.issues
       });
     }
     return res.status(500).json({
