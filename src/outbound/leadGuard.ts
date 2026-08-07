@@ -7,8 +7,11 @@ export class LeadGuard {
 
  constructor() {
  // Sets up a single database binary file right in your root directory
- const dbPath = path.join(__dirname, '../../syncro_scale.db');
- this.db = new Database(dbPath);
+ const dbPath = process.env.NODE_ENV === 'production'
+  ? '/tmp/syncro_scale.db'
+  : path.join(__dirname, '../../syncro_scale.db');
+
+this.db = new Database(dbPath);
  this.db.pragma('journal_mode = WAL');
  this.db.pragma('synchronous = NORMAL');
  this.initializeSchema();
