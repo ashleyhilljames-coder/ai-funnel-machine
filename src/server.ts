@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import twilio from 'twilio';
 import helmet from 'helmet';
@@ -61,7 +62,18 @@ app.get('/dashboard.html', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(publicPath, 'dashboard.html'));
+  const dashboardFile = path.join(publicPath, 'dashboard.html');
+
+  if (fs.existsSync(dashboardFile)) {
+    res.sendFile(dashboardFile);
+  } else {
+    res.json({
+      status: 'online',
+      service: 'Syncro Scale Engine',
+      environment: process.env.NODE_ENV || 'development',
+      message: 'API is running. Dashboard asset missing from build path.'
+    });
+  }
 });
 
 console.log(`📡 Static assets serving from: ${publicPath}`);

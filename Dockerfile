@@ -8,6 +8,7 @@ RUN npm ci
 
 # Copy source code and build
 COPY src ./src
+COPY public ./public
 RUN npm run build
 
 # Prune devDependencies to leave only production packages
@@ -23,7 +24,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-
+COPY public ./public
 # Use non-root node user for security
 USER node
 
