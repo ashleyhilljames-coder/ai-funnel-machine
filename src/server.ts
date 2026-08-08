@@ -21,7 +21,8 @@ export const CampaignOutreachSchema = z.object({
   name: z.string().optional(),
   subject: z.string().optional(),
   body: z.string().optional(),
-  template: z.string().optional()
+  template: z.string().optional(),
+  phone: z.string().optional()
 });
 
 export const IntakeSchema = z.object({
@@ -181,13 +182,23 @@ app.post('/api/call/intercept', async (req, res) => {
 // 📧 CAMPAIGN OUTREACH ROUTE
 app.post('/api/send-campaign-outreach', async (req: any, res: any) => {
   try {
-    const { email, name, clientId, subject, body, template } = CampaignOutreachSchema.parse(req.body);
+    const { email, name, clientId, subject, body,template, phone } = CampaignOutreachSchema.parse(req.body);
+if (!phone) {
+  return res.status(400).json({ success: false, error: "Phone number is required for SMS dispatch" });
+}
+   // Real SMS dispatch via Twilio
+    const message = await twilioClient.messages.create({
+      body: body,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phone
+    });
 
-    console.log(`[Campaign Outreach] Dispatching campaign to ${email} for client ${clientId}`);
-    
-    return res.status(200).json({ 
-      success: true, 
-      message: `Outreach email successfully processed for ${name || email}` 
+    console.log(`[Campaign Outreach] SMS sent, SID: ${message.sid}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `Outreach SMS successfully sent to ${name || email}`,
+      sid: message.sid
     });
 
   } catch (error: any) {
