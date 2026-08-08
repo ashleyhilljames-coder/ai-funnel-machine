@@ -16,13 +16,13 @@ export const CallInterceptSchema = z.object({
 });
 
 export const CampaignOutreachSchema = z.object({
-  email: z.string().email(),
-  clientId: z.string().min(1),
-  name: z.string().optional(),
-  subject: z.string().optional(),
-  body: z.string().optional(),
-  template: z.string().optional(),
-  phone: z.string().optional()
+  clientId: z.string().default('default_client'),
+  email: z.string().email().default('outreach@syncroscale.local'),
+  phone: z.string().min(10, "Valid phone number required"),
+  name: z.string().default('Partner'),
+  subject: z.string().default('Syncro Scale Partnership Inquiry'),
+  body: z.string().default('Hi, reaching out from Syncro Scale regarding after-hours lead handling.'),
+  template: z.string().optional()
 });
 
 export const IntakeSchema = z.object({

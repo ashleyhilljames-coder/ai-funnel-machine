@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { OpenAI } from 'openai';
 import * as dotenv from 'dotenv';
 import { LeadGuard } from '../leadGuard';
+import { Twilio } from 'twilio';
 
 const leadGuard = new LeadGuard();
 
@@ -11,7 +12,15 @@ dotenv.config();
 // Initialize our two core engines
 const resend = new Resend(process.env.RESEND_API_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
+export const TEST_CONFIG = {
+  TEST_MODE: true,
+  TARGET_CONTACT: {
+    name: 'Robert Butler',
+    phone: '+17024919899',
+    role: 'Mitigation Manager',
+  },
+  SENDER_SIGNATURE: 'Ashley | Syncro Scale',
+};
 interface Prospect {
   contactName: string;
   businessName: string;
@@ -27,8 +36,17 @@ export class OutboundSequenceManager {
   async generateSequenceDraft(
     prospect: Prospect, 
     templateNiche: string = 'mitigation',
+
     customTemplate?: { subject_template: string; body_prompt: string; is_static: number }
   ): Promise<{ subject: string; body: string }> {
+  // Override prospect info when TEST_MODE is active
+  const activeProspect = TEST_CONFIG.TEST_MODE
+    ? {
+        ...prospect,
+        contactName: TEST_CONFIG.TARGET_CONTACT.name,
+        // use dad's number if phone is on prospect
+      }
+    : prospect;
     console.log(`\n🧠 AI is crafting a draft campaign for ${prospect.businessName} using template "${templateNiche}"...`);
 
     const replaceTokens = (text: string) => {
@@ -146,13 +164,16 @@ Write only the body of the email starting directly after the greeting. Do not in
     }
 
     // Compile the final polished structure
-    const body = `Hi ${prospect.contactName},\n\n${emailBodyText}\n\nBest,\n\nAshley | Agentic Nexus`;
+ const body = `Hi ${prospect.contactName},\n\n${emailBodyText}\n\nBest,\nAshley | Syncro Scale`;
 
     return { subject, body };
   }
 
-  async generateCampaignSequence(clientId: string = 'default_client', prospect: Prospect): Promise<CampaignResult> {
-    const draft = await this.generateSequenceDraft(prospect, 'mitigation');
+  async generateCampaignSequence(
+    clientId: string = 'default',
+    prospect: Prospect
+  ): Promise<CampaignResult> {
+    const draft = await this.generateSequenceDraft(prospect);
     await sendOutboundEmail(clientId, {
       to: prospect.email,
       subject: draft.subject,
@@ -163,7 +184,6 @@ Write only the body of the email starting directly after the greeting. Do not in
     };
   }
 }
-
 export async function sendOutboundEmail(clientId: string, payload: { to: string; subject: string; htmlContent: string }) {
   try {
     const settings = leadGuard.getClientSettings(clientId);
@@ -174,7 +194,7 @@ export async function sendOutboundEmail(clientId: string, payload: { to: string;
     }
     const resendClient = new Resend(apiKey);
     const { data, error } = await resendClient.emails.send({
-      from: 'Ashley | Agentic Nexus <ashley.hilljames@agenticnexus.vip>',
+      from: 'Ashley | Syncro Scale <ashley.hilljames@agenticnexus.vip>',
       to: [payload.to],
       subject: payload.subject,
       html: payload.htmlContent,
