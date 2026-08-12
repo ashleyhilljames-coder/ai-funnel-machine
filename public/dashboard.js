@@ -55,6 +55,178 @@ async function fetchRecentDispatches() {
   fetchRecentDispatches();
   setInterval(fetchRecentDispatches, 10000);
 
+  // --- Emergency Scraped Leads Queue Handler ---
+  async function fetchScrapedQueue() {
+    try {
+      const response = await fetch('/api/leads/scraped');
+      const data = await response.json();
+      if (data.success && data.leads) {
+        renderScrapedQueue(data.leads);
+      }
+    } catch (err) {
+      console.warn('Error fetching scraped queue:', err);
+    }
+  }
+
+  function renderScrapedQueue(leads) {
+    const container = document.getElementById('scraped-queue-container');
+    if (!container) return;
+
+    if (!leads || leads.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem;">No emergency incident leads in queue.</p>';
+      return;
+    }
+
+    container.innerHTML = leads.map(lead => {
+      const isEnrichNeeded = !lead.hasPhone || !lead.phone || lead.phone.includes('Enrichment');
+      const sourceColor = lead.source === 'Nextdoor' ? '#10b981' : (lead.source === 'Facebook Group' ? '#3b82f6' : '#a855f7');
+      const postUrl = lead.rawPostUrl || '#';
+      const defaultSms = `Hi ${lead.fullName}, this is Rapid Home Relief. We saw your post regarding ${lead.emergencyType}. Our local certified mitigation crew is available to dispatch immediately with our 90-Min Arrival Guarantee. Tap here to track dispatch: https://rapidhomerelief.com/dispatch`;
+      
+      return `
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; position: relative;" id="card-${lead.id}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong style="color: #fff; font-size: 1rem;">${lead.fullName}</strong>
+              <span style="font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid ${sourceColor}44; color: ${sourceColor};">
+                ${lead.source}
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${postUrl && postUrl !== '#' ? `
+                <a href="${postUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                  🔗 View Original Post / Direct Reply
+                </a>
+              ` : ''}
+              <span style="font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981;">
+                🛡️ ${lead.confidenceScore}% Intent Match
+              </span>
+              <span style="font-size: 0.7rem; color: #64748b; font-family: monospace;">
+                ${new Date(lead.scrapedAt).toLocaleTimeString()}
+              </span>
+            </div>
+          </div>
+
+          <div style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
+            <div><span style="color: #64748b;">📍 Address:</span> ${lead.address}</div>
+            <div><span style="color: #64748b;">🚨 Incident:</span> <span style="color: #f87171; font-weight: 600;">${lead.emergencyType}</span></div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; font-size: 0.75rem; color: #94a3b8; font-style: italic; margin-bottom: 12px;">
+            "${lead.description}"
+          </div>
+
+          <!-- Editable Live Outbound SMS Message Preview -->
+          <div style="margin-bottom: 14px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
+            <div style="font-size: 0.7rem; font-weight: 700; color: #10b981; text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
+              <span>💬 Live Outbound SMS Response Preview (Editable)</span>
+            </div>
+            <textarea id="sms-text-${lead.id}" rows="2" style="width: 100%; background: #020617; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; font-size: 0.75rem; color: #f8fafc; font-family: monospace; resize: vertical;">${defaultSms}</textarea>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; pt-2; border-top: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 0.8rem;">
+              ${isEnrichNeeded ? 
+                '<span style="color: #fbbf24; font-weight: 600; font-size: 0.75rem; padding: 2px 8px; background: rgba(251, 191, 36, 0.1); border-radius: 4px; border: 1px solid rgba(251, 191, 36, 0.3);">⚠️ Phone Enrichment Needed</span>' : 
+                `<span style="color: #10b981; font-family: monospace; font-weight: 700;">📞 ${lead.phone}</span>`
+              }
+            </div>
+
+            <div>
+              ${lead.smsDispatched ? `
+                <span style="color: #10b981; font-weight: 700; font-size: 0.75rem; padding: 6px 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px;">
+                  ✅ Outbound SMS Dispatched
+                </span>
+              ` : `
+                <button class="trigger-sms-btn" data-id="${lead.id}" data-phone="${lead.phone}" data-name="${lead.fullName}" data-source="${lead.source}" style="padding: 6px 14px; font-size: 0.75rem; font-weight: 700; background: #059669; color: #fff; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
+                  📱 Trigger Outbound SMS Response
+                </button>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click listeners to SMS buttons
+    container.querySelectorAll('.trigger-sms-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const target = e.currentTarget;
+        const leadId = target.getAttribute('data-id');
+        const phone = target.getAttribute('data-phone');
+        const name = target.getAttribute('data-name');
+        const source = target.getAttribute('data-source');
+
+        const textarea = document.getElementById(`sms-text-${leadId}`);
+        const customMessage = textarea ? textarea.value : '';
+
+        let finalPhone = phone;
+        if (!finalPhone || finalPhone.includes('Enrichment') || finalPhone.length < 7) {
+          const userPhone = prompt(`Enrich Phone Number for ${name} (${source}):`, '');
+          if (!userPhone || userPhone.trim().length < 7) {
+            alert('A valid 10-digit phone number is required to send outbound SMS.');
+            return;
+          }
+          finalPhone = userPhone.trim();
+        }
+
+        target.disabled = true;
+        target.textContent = 'Sending SMS...';
+
+        try {
+          const res = await fetch('/api/leads/outbound-sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId,
+              phone: finalPhone,
+              name,
+              message: customMessage || `Syncro Scale Emergency Dispatch: Hi ${name}, an emergency restoration crew is available immediately to assist with your incident post in ${source}. Reply DISPATCH to confirm.`
+            })
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            alert(`✅ Outbound SMS successfully dispatched to ${data.to || finalPhone}!`);
+            fetchScrapedQueue();
+          } else {
+            alert(`❌ SMS Dispatch Error: ${data.error}`);
+            target.disabled = false;
+        } catch (err) {
+          alert(`❌ Network Error: ${err.message}`);
+          target.disabled = false;
+          target.textContent = '📱 Trigger Outbound SMS Response';
+        }
+      });
+    });
+  }
+
+  // Trigger Scraper Button Handler in Dashboard
+  const triggerScraperBtn = document.getElementById('trigger-emergency-scraper-btn');
+  if (triggerScraperBtn) {
+    triggerScraperBtn.addEventListener('click', async () => {
+      triggerScraperBtn.disabled = true;
+      triggerScraperBtn.textContent = 'Scraping Feeds...';
+
+      try {
+        const res = await fetch('/api/leads/trigger-scrape', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          fetchScrapedQueue();
+        }
+      } catch (err) {
+        console.error('Trigger scraper error:', err);
+      } finally {
+        triggerScraperBtn.disabled = false;
+        triggerScraperBtn.textContent = '⚡ Trigger Scraper Engine';
+      }
+    });
+  }
+
+  fetchScrapedQueue();
+  setInterval(fetchScrapedQueue, 10000);
+
+
 
  // Intercept Fetch to inject Session Token & catch 401s
  const originalFetch = window.fetch;

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist",
     "module": "commonjs",
     "target": "es2022",
@@ -14,6 +14,8 @@
     "skipLibCheck": true,
     "moduleDetection": "force"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "src/test-*.ts", "dist"]
+  "include": ["src/**/*", "scraper/**/*"],
+  "exclude": ["node_modules", "src/test-*.ts", "dist", "frontend", "src/components/**/*"]
 }
+
+

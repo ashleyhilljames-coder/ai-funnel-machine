@@ -1,0 +1,29 @@
+{
+  "name": "organic-lead-agent",
+  "version": "1.0.0",
+  "description": "Zero-cost Node.js background script for emergency home relief lead monitoring and AI qualification",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "once": "node index.js --once",
+    "test": "node index.js --test",
+    "watch": "node index.js --watch"
+  },
+  "keywords": [
+    "lead-generation",
+    "gemini",
+    "rss",
+    "slack",
+    "discord"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.16.0",
+    "@slack/webhook": "^8.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "rss-parser": "^3.13.0"
+  }
+}

@@ -213,21 +213,52 @@
  </div>
 
  <!-- Navigation Tabs -->
- <div class="dashboard-tabs">
- <button class="tab-btn active"data-tab="registry-tab">️ Lead Guard Registry</button>
- <button class="tab-btn"data-tab="calls-tab">Live Conversation Stream</button>
- <button class="tab-btn"data-tab="analytics-tab">Visual Analytics</button>
- <button class="tab-btn"data-tab="integrations-tab">Meta Ads Integrator</button>
- <button class="tab-btn"data-tab="knowledge-tab">Knowledge RAG Base</button>
- <button class="tab-btn"data-tab="campaigns-tab">Outbound Campaigns</button>
- <button class="tab-btn"data-tab="billing-tab">Usage & Billing</button>
- <button class="tab-btn"data-tab="settings-tab">️ Settings</button>
- </div>
+  <div class="dashboard-tabs">
+  <button class="tab-btn active"data-tab="scraped-queue-tab">🚨 Scraped Leads Queue</button>
+  <button class="tab-btn"data-tab="registry-tab">️ Lead Guard Registry</button>
+  <button class="tab-btn"data-tab="calls-tab">Live Conversation Stream</button>
+  <button class="tab-btn"data-tab="analytics-tab">Visual Analytics</button>
+  <button class="tab-btn"data-tab="integrations-tab">Meta Ads Integrator</button>
+  <button class="tab-btn"data-tab="knowledge-tab">Knowledge RAG Base</button>
+  <button class="tab-btn"data-tab="campaigns-tab">Outbound Campaigns</button>
+  <button class="tab-btn"data-tab="billing-tab">Usage & Billing</button>
+  <button class="tab-btn"data-tab="settings-tab">️ Settings</button>
+  </div>
 
 
- <div class="tab-content">
- <!-- Lead Guard Registry Tab Pane -->
- <div id="registry-tab"class="tab-pane active">
+  <div class="tab-content">
+  <!-- Scraped Leads Queue Tab Pane -->
+  <div id="scraped-queue-tab"class="tab-pane active">
+  <section class="glass-card scraper-queue-card" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 16px; margin-bottom: 20px;">
+      <div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <span>🚨</span> Emergency Scraped Leads Queue
+        </h2>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
+          Live incident scraper monitoring public community feeds for disaster keywords (water leaking, pipe burst, ceiling dripping, roof leak).
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700; border-radius: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;" class="animate-pulse"></span>
+          Scraper: ACTIVE
+        </span>
+        <button id="trigger-emergency-scraper-btn" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.8rem; font-weight: 700;">
+          ⚡ Trigger Scraper Engine
+        </button>
+      </div>
+    </div>
+
+    <!-- Scraped Feed Cards Container -->
+    <div id="scraped-queue-container" style="display: flex; flex-direction: column; gap: 16px;">
+      <p style="color: var(--text-secondary); font-size: 0.85rem;">Loading live scraped emergency leads...</p>
+    </div>
+  </section>
+  </div>
+
+  <!-- Lead Guard Registry Tab Pane -->
+  <div id="registry-tab"class="tab-pane">
  <section class="glass-card registry-card">
  <div class="registry-header">
  <div>

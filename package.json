@@ -4,11 +4,12 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "tsc && npm --prefix frontend run build",
+    "start": "node dist/src/index.js",
     "dev": "tsx src/index.ts",
     "import-leads": "tsx src/outbound/importLeads.ts",
     "scrape-leads": "tsx src/outbound/scrapeGoogleLeads.ts",
+    "scrape-emergency": "tsx scraper/emergencyScraper.ts",
     "test:lead": "tsx src/test-lead.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

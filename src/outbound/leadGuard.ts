@@ -1519,70 +1519,70 @@ this.db = new Database(dbPath);
  * Seeds default campaign templates.
  */
  private seedDefaultTemplates() {
- try {
- const templates = [
- {
- id: 'mitigation',
- name: 'Emergency Mitigation Outreach',
- subjectTemplate: 'Quick question regarding {businessName}',
- bodyPrompt: `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Agentic Nexus. 
-Your agency builds custom AI intake and lead-qualification agents specifically for emergency mitigation and restoration contractors.
-Write a short, direct, and completely hype-free Day 1 cold outreach email.
-- Keep it strictly under 4 sentences and write in a casual, peer-to-peer tone.
-- Do NOT use cheesy marketing terms, corporate buzzwords, or fake compliments.
-- Focus heavily on the exact pain point: when crews are out on a job, incoming water/fire emergency calls go to voicemail, losing $10k+ mitigation jobs to competitors.
-- Mention how a 24/7 AI intake agent qualifies emergency leads instantly so they never miss a dispatch.
-- End with a low-friction question asking if they are currently using automation to capture after-hours inbound calls.`,
- isStatic: 0
- },
- {
- id: 'roofing',
- name: 'Commercial Roofing Outreach',
- subjectTemplate: 'Roofing dispatch question - {businessName}',
- bodyPrompt: `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Agentic Nexus. 
-Your agency builds custom AI intake and lead-qualification agents specifically for commercial roofing contractors.
-Write a short, direct, and completely hype-free Day 1 cold outreach email.
-- Keep it strictly under 4 sentences and write in a casual, peer-to-peer tone.
-- Do NOT use cheesy marketing terms, corporate buzzwords, or fake compliments.
-- Focus heavily on the exact pain point: during roof leaks or storm events, high-ticket roofing leads call in and want immediate response. If they hit voicemail, they call the next roofer.
-- Mention how a 24/7 AI receptionist answers immediately, collects leak/building details, and books inspections on the spot.
-- End with a low-friction question asking if they are currently using automation to capture after-hours inbound calls.`,
- isStatic: 0
- },
- {
- id: 'property',
- name: 'Property Management Outreach',
- subjectTemplate: 'Tenant maintenance intake for {businessName}',
- bodyPrompt: `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Agentic Nexus. 
-Your agency builds custom AI intake and lead-qualification agents specifically for property management and maintenance operations.
-Write a short, direct, and completely hype-free Day 1 cold outreach email.
-- Keep it strictly under 4 sentences and write in a casual, peer-to-peer tone.
-- Do NOT use cheesy marketing terms, corporate buzzwords, or fake compliments.
-- Focus heavily on the exact pain point: handling tenant emergency maintenance requests after hours is a labor-intensive, expensive process prone to tenant complaints and dispatch delays.
-- Mention how a 24/7 AI maintenance intake agent handles tenant calls, qualifies the severity of the issue, and books emergency dispatches instantly.
-- End with a low-friction question asking if they are currently using automation to coordinate tenant emergency dispatches.`,
- isStatic: 0
- },
- {
- id: 'realestate',
- name: 'Real Estate Tour Outreach',
- subjectTemplate: 'Home showing question - {businessName}',
- bodyPrompt: `You are an expert B2B/B2C outbound copywriter writing a personal note on behalf of Ashley from Agentic Nexus. 
-Write a short, direct, and completely hype-free Day 1 cold outreach email.
-- Keep it strictly under 4 sentences and write in a casual, peer-to-peer tone.
-- Do NOT use cheesy marketing terms, corporate buzzwords, or fake compliments.
-- Focus heavily on the exact pain point: residential buyers who hit voicemail when trying to schedule showing tours will immediately contact another listing agent.
-- Mention how a 24/7 AI virtual tour booking assistant routes qualified showings instantly.
-- End with a low-friction question asking if they are currently using automation to capture showing inquiries.`,
- isStatic: 0
- }
- ];
+    try {
+      const templates = [
+        {
+          id: 'mitigation',
+          name: 'Emergency Mitigation Outreach',
+          subjectTemplate: 'Emergency mitigation dispatch - {businessName}',
+          bodyPrompt: `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Syncro Scale. 
+Your agency builds 24/7 AI intake and emergency dispatch agents specifically for property restoration and mitigation managers.
+Write a short, direct, and concise Day 1 cold outreach email tailored specifically for property restoration and mitigation managers.
+- Keep it strictly under 4 sentences in a professional, direct, peer-to-peer B2B tone.
+- Avoid pushy sales jargon, marketing fluff, or unearned praise.
+- Focus heavily on the exact operational pain point: when mitigation crews are out on a job, incoming high-value water/fire emergency calls go to voicemail, losing $10k+ mitigation contracts to local competitors.
+- Highlight how a 24/7 AI intake agent qualifies emergency leads and dispatches crews immediately so no job is lost.
+- Prioritize a clear call-to-action asking if they are open to a quick 10-minute call this week to see how the automated dispatch pipeline works.`,
+          isStatic: 0
+        },
+        {
+          id: 'roofing',
+          name: 'Commercial Roofing Outreach',
+          subjectTemplate: 'Roofing & mitigation dispatch for {businessName}',
+          bodyPrompt: `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Syncro Scale. 
+Your agency builds 24/7 AI intake and lead-qualification agents specifically for commercial roofing and storm mitigation contractors.
+Write a short, direct, and completely hype-free Day 1 cold outreach email tailored for roofing and mitigation managers.
+- Keep it strictly under 4 sentences in a professional, direct B2B peer-to-peer tone.
+- Avoid pushy sales jargon, corporate buzzwords, or fake compliments.
+- Focus on the key operational pain point: when severe weather hits, inbound calls flood in. If calls hit voicemail, property owners immediately move to the next contractor on Google.
+- Highlight how a 24/7 AI emergency intake agent answers instantly, gathers leak/damage parameters, and books inspections or dispatches teams on the spot.
+- Prioritize a clear call-to-action asking if they are open to a brief 10-minute preview of the dispatch workflow this week.`,
+          isStatic: 0
+        },
+        {
+          id: 'property',
+          name: 'Property Management Outreach',
+          subjectTemplate: 'Emergency maintenance dispatch - {businessName}',
+          bodyPrompt: `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Syncro Scale. 
+Your agency builds 24/7 AI intake and lead-qualification agents specifically for property management and maintenance operations.
+Write a short, direct, and concise Day 1 cold outreach email tailored specifically for property restoration and mitigation managers.
+- Keep it strictly under 4 sentences in a professional, direct, peer-to-peer B2B tone.
+- Avoid pushy sales jargon, corporate buzzwords, or unearned praise.
+- Focus on the exact operational pain point: handling tenant emergency maintenance and water/fire damage requests after hours is expensive and prone to missed dispatches.
+- Mention how a 24/7 AI emergency maintenance intake agent handles calls, qualifies issue severity, and dispatches mitigation crews immediately.
+- Prioritize a clear call-to-action asking if they have 10 minutes open this week to evaluate our automated dispatch workflow.`,
+          isStatic: 0
+        },
+        {
+          id: 'realestate',
+          name: 'Real Estate Tour Outreach',
+          subjectTemplate: 'Showing workflow question - {businessName}',
+          bodyPrompt: `You are an expert B2B outbound copywriter writing a personal note on behalf of Ashley from Syncro Scale. 
+Write a short, direct, and professional Day 1 cold outreach email.
+- Keep it strictly under 4 sentences in a direct B2B tone.
+- Avoid sales jargon or unearned praise.
+- Focus on the exact pain point: high-intent buyers who hit voicemail when scheduling showings will immediately contact another listing agent.
+- Mention how a 24/7 AI virtual tour assistant routes qualified showing requests instantly.
+- Prioritize a clear call-to-action asking if they are open to a quick 10-minute call this week.`,
+          isStatic: 0
+        }
+      ];
 
- const now = new Date().toISOString();
- const insert = this.db.prepare(`
- INSERT INTO outbound_templates (id, client_id, name, subject_template, body_prompt, is_static, updated_at)
- VALUES (?, 'default_client', ?, ?, ?, ?, ?)
- `);
+      const now = new Date().toISOString();
+      const insert = this.db.prepare(`
+        INSERT INTO outbound_templates (id, client_id, name, subject_template, body_prompt, is_static, updated_at)
+        VALUES (?, 'default_client', ?, ?, ?, ?, ?)
+      `);
 
  for (const t of templates) {
  insert.run(t.id, t.name, t.subjectTemplate, t.bodyPrompt, t.isStatic, now);
