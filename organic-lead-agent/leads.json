@@ -8682,5 +8682,83 @@
     "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (25359.5h old)",
     "suggested_reply": "",
     "processedAt": "2026-08-28T06:35:57.940Z"
+  },
+  {
+    "id": "CBMiPkFVX3lxTE9KWC1zNnpkNlVrUnVoM21mWDQ0UF9SOUJaWnVtS29FQWxxT2tVRlhERXhrYU0tMTB2WVFvWURB",
+    "title": "Hensen Juang (@basedjensen) / Posts / X - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiPkFVX3lxTE9KWC1zNnpkNlVrUnVoM21mWDQ0UF9SOUJaWnVtS29FQWxxT2tVRlhERXhrYU0tMTB2WVFvWURB?oc=5",
+    "source": "X / Twitter",
+    "date": "2024-07-03T09:57:56.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (18862.3h old)",
+    "suggested_reply": "",
+    "processedAt": "2026-08-28T08:15:44.729Z"
+  },
+  {
+    "id": "CBMiQkFVX3lxTE53dUFzcGN4LTFIRlBpNnM3N2NUZzZKUGRlMG9VYVNUUFd4N0FHa09PUjBUSkU5dmVpSzRKUUNZYVF0dw",
+    "title": "The Dr. Margaret Show (@DrMargaretShow) / Posts / X - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiQkFVX3lxTE53dUFzcGN4LTFIRlBpNnM3N2NUZzZKUGRlMG9VYVNUUFd4N0FHa09PUjBUSkU5dmVpSzRKUUNZYVF0dw?oc=5",
+    "source": "X / Twitter",
+    "date": "2025-12-31T00:19:46.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (5769.3h old)",
+    "suggested_reply": "",
+    "processedAt": "2026-08-28T09:34:54.562Z"
+  },
+  {
+    "id": "CBMiPkFVX3lxTFBEWFN0Z29uMkEzQ05Pd0xTbHZ6UFB1OXdRb2prWGx3TXh5OVluZ2RjZXhta0NMajZfSWh0c3pR",
+    "title": "danbooru (@danboorubot) on X - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiPkFVX3lxTFBEWFN0Z29uMkEzQ05Pd0xTbHZ6UFB1OXdRb2prWGx3TXh5OVluZ2RjZXhta0NMajZfSWh0c3pR?oc=5",
+    "source": "X / Twitter",
+    "date": "2024-05-31T22:59:31.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (19642.9h old)",
+    "suggested_reply": "",
+    "processedAt": "2026-08-28T09:50:44.076Z"
+  },
+  {
+    "id": "CBMiQkFVX3lxTE9HYlBqVUtjczIwTTRublZMVkgwVWxra3N1bGl1dDMwTXRCSEtZWGZBUThfNlFmLXJKcnRGbnd1b0JoUQ",
+    "title": "The Washington Post (@washingtonpost) / Posts / X - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiQkFVX3lxTE9HYlBqVUtjczIwTTRublZMVkgwVWxra3N1bGl1dDMwTXRCSEtZWGZBUThfNlFmLXJKcnRGbnd1b0JoUQ?oc=5",
+    "source": "X / Twitter",
+    "date": "2026-08-28T13:01:27.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Score 0% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-08-28T13:22:41.782Z"
+  },
+  {
+    "id": "CBMiPEFVX3lxTE1UMzhxdEg0NEhmU2lpcXBPbkp5QlhmbWxHSDV6a2hUX1c0Sm9odXNraEdWSGFxSHc0WEtjdA",
+    "title": "Cern Basher (@CernBasher) / Posts / X - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiPEFVX3lxTE1UMzhxdEg0NEhmU2lpcXBPbkp5QlhmbWxHSDV6a2hUX1c0Sm9odXNraEdWSGFxSHc0WEtjdA?oc=5",
+    "source": "X / Twitter",
+    "date": "2026-08-24T23:02:26.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Score 0% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-08-28T14:23:41.830Z"
+  },
+  {
+    "id": "CBMisAFBVV95cUxQc3pUOFNUdTA3dlpIbHBJa1FMdTE0cTBYSk1ZUmdaY1N2YWJUMnk5cVo3d1c0MTc1NDVwZDJ3VEJRTWtzcW9MbGZTaTF4aUFzSDhqSXAwX2gyNmZ0Z2ktZnkzZTNhc0tvRjBpZW5MOWtrZ0dlbFhWalhzVVJ0elZhaUY4RUQwVXFzcHpTSmZJNFBIbU1KSUhwQnlvRF9HZk94NUY4Y0dVaFRYcC1JX1BhQw",
+    "title": "\"uic.io/en/calendar/today_in_history/1404/02/13/\" - Results on X | Live Posts & Updates - x.com",
+    "link": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQc3pUOFNUdTA3dlpIbHBJa1FMdTE0cTBYSk1ZUmdaY1N2YWJUMnk5cVo3d1c0MTc1NDVwZDJ3VEJRTWtzcW9MbGZTaTF4aUFzSDhqSXAwX2gyNmZ0Z2ktZnkzZTNhc0tvRjBpZW5MOWtrZ0dlbFhWalhzVVJ0elZhaUY4RUQwVXFzcHpTSmZJNFBIbU1KSUhwQnlvRF9HZk94NUY4Y0dVaFRYcC1JX1BhQw?oc=5",
+    "source": "X / Twitter",
+    "date": "2026-08-27T07:32:31.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Score 0% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-08-28T14:23:41.843Z"
   }
 ]

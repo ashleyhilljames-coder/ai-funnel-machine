@@ -2,24 +2,24 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Copy root and frontend package definitions for layer caching
+# Copy all configuration files for root and frontend before installing dependencies
 COPY package*.json tsconfig.json ./
-COPY frontend/package*.json ./frontend/
+COPY frontend/package*.json frontend/vite.config.ts frontend/tsconfig*.json frontend/tailwind.config.js frontend/postcss.config.js ./frontend/
 
-# Install dependencies for both root and frontend
-RUN npm ci
-RUN npm --prefix frontend ci
+# Install root and frontend node dependencies
+RUN npm install
+RUN npm --prefix frontend install
 
-# Copy backend & frontend source code
+# Copy source files for backend, frontend, scrapers, and static assets
 COPY src ./src
 COPY scraper ./scraper
 COPY public ./public
 COPY frontend ./frontend
 
-# Run production build (compiles TS backend to dist/ and Vite frontend to public/)
+# Run production build (compiles backend via tsc to ./dist and frontend via vite to ./public)
 RUN npm run build
 
-# Prune root devDependencies for production runtime
+# Prune devDependencies for production runtime
 RUN npm prune --production
 
 # --- Stage 2: Production Runner ---
