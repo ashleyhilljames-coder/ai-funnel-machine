@@ -7,8 +7,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { z, ZodError, type ZodIssue } from 'zod';
 import { ingestLead } from './ingest.js';
-import leadRoutes from './routes/leads';
-
+import leadRoutes, { addScrapedLead } from './routes/leads';
 
 export const CallInterceptSchema = z.object({
   callSid: z.string().min(1),
@@ -59,6 +58,15 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/dashboard', (req, res) => {
+  const dashboardFile = path.join(publicPath, 'dashboard.html');
+  if (fs.existsSync(dashboardFile)) {
+    res.sendFile(dashboardFile);
+  } else {
+    res.status(404).send('Dashboard file not found in public directory.');
+  }
+});
+
 app.get('/dashboard.html', (req, res) => {
   res.sendFile(path.join(publicPath, 'dashboard.html'));
 });
@@ -74,6 +82,74 @@ app.get('/', (req, res) => {
       service: 'Syncro Scale Engine',
       environment: process.env.NODE_ENV || 'development',
       message: 'API is running. Dashboard asset missing from build path.'
+    });
+  }
+});
+
+// 📥 Ingest Webhook Lead Route (from organic-lead-agent or external scrapers)
+app.post('/webhook/lead', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    console.log('📥 [WEBHOOK /webhook/lead] Received lead payload:', payload);
+
+    const title = payload.title || payload.headline || payload.subject || payload.fullName || 'Scraped Emergency Lead';
+    const text = payload.text || payload.description || payload.content || payload.snippet || payload.emergencyType || 'Emergency restoration required';
+    const url = payload.url || payload.link || payload.rawPostUrl || payload.guid || '';
+    const source = payload.source || payload.platform || payload.origin || 'Organic Lead Scraper';
+    const phone = payload.phone || payload.homeowner_phone || payload.contactPhone || payload.authorPhone || '+17025550199';
+    const address = payload.address || payload.property_address || payload.location || 'Las Vegas, NV';
+    const email = payload.email || payload.homeowner_email || 'scraped.lead@organic-agent.local';
+
+    const generatedLeadId = `SCRAPE-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const newScrapedLead = {
+      id: generatedLeadId,
+      fullName: title,
+      phone: phone,
+      email: email,
+      address: address,
+      emergencyType: text,
+      waterSource: payload.waterSource || 'Pipe / Roof Leak',
+      affectedRooms: payload.affectedRooms || 'Living / Utility Room',
+      description: text,
+      source: source,
+      confidenceScore: Math.round((payload.intentScore || 0.95) * 100),
+      scrapedAt: payload.scrapedAt || payload.timestamp || new Date().toISOString(),
+      rawPostUrl: url || 'http://localhost:3000/dashboard',
+      hasPhone: Boolean(phone && !phone.includes('Enrichment')),
+      smsDispatched: false
+    };
+
+    addScrapedLead(newScrapedLead);
+
+    // Also attempt ingestLead for DB/PubSub publishing
+    let ingestedLeadId = generatedLeadId;
+    try {
+      const result = await ingestLead({
+        email,
+        clientId: payload.clientId || 'default_client',
+        name: title,
+        phone,
+        service: source
+      } as any);
+      if (result?.lead?.id) {
+        ingestedLeadId = result.lead.id;
+      }
+    } catch (ingestErr) {
+      console.warn('⚠️ Standard DB ingest fallback warning:', ingestErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      leadId: ingestedLeadId,
+      message: 'Lead successfully received and queued at /webhook/lead',
+      lead: newScrapedLead
+    });
+  } catch (error: any) {
+    console.error('❌ Error processing /webhook/lead:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal server error processing lead webhook'
     });
   }
 });

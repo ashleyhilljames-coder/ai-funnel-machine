@@ -265,7 +265,7 @@ router.post('/update-status', apiKeyAuth, async (req, res) => {
 });
 
 // Memory store for active scraped incident leads in current server lifecycle
-let activeScrapedQueue: any[] = [
+export let activeScrapedQueue: any[] = [
   {
     id: 'SCRAPE-101',
     fullName: 'Sarah Jenkins',
@@ -318,6 +318,10 @@ let activeScrapedQueue: any[] = [
     smsDispatched: false
   }
 ];
+
+export function addScrapedLead(lead: any) {
+  activeScrapedQueue.unshift(lead);
+}
 
 // GET /api/leads/scraped
 router.get('/scraped', (_req, res) => {

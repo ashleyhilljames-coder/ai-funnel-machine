@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, PhoneCall, X, ShieldAlert, Radio, Clock, Smartphone, Copy, Check, Timer, DollarSign } from 'lucide-react';
+import { DISPATCH_PHONE_DISPLAY, DISPATCH_PHONE_TEL, SITE_CONFIG } from '../config/site';
 
 interface SMSModalProps {
   isOpen: boolean;
@@ -122,17 +123,20 @@ export const SMSModal: React.FC<SMSModalProps> = ({ isOpen, onClose, leadData })
           
           <p className="text-xs text-slate-400">Counting down live for emergency crew arrival</p>
 
-          {/* THE $90 ON-TIME ARRIVAL GUARANTEE HIGHLIGHT CARD */}
+          {/* THE SAME-DAY ARRIVAL GUARANTEE HIGHLIGHT CARD */}
           <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 text-left">
             <div className="p-2 rounded-lg bg-amber-500 text-slate-950 shrink-0 font-black text-sm flex items-center gap-0.5">
-              <DollarSign className="w-4 h-4" />90
+              <DollarSign className="w-4 h-4" />{SITE_CONFIG.guarantee.payoutAmount}
             </div>
             <div>
               <h4 className="text-xs font-black text-amber-400 uppercase tracking-wide">
-                $90 On-Time Arrival Guarantee
+                ${SITE_CONFIG.guarantee.payoutAmount} {SITE_CONFIG.guarantee.title}
               </h4>
               <p className="text-[11px] text-slate-300 leading-tight">
-                If our certified restoration crew is not parked at your property before this timer hits <code>00:00</code>, we pay you $90 cash.
+                If our restoration specialist isn't at your property the same day, we pay you ${SITE_CONFIG.guarantee.payoutAmount}.
+              </p>
+              <p className="text-[10px] text-slate-400 italic mt-0.5">
+                {SITE_CONFIG.guarantee.disclaimer}
               </p>
             </div>
           </div>
@@ -182,14 +186,14 @@ export const SMSModal: React.FC<SMSModalProps> = ({ isOpen, onClose, leadData })
             <span className="text-[10px] text-slate-400">Just Now</span>
           </div>
           <p className="text-slate-300 leading-snug">
-            📲 <strong>Rapid Home Relief Alert:</strong> Hi {leadData.fullName}, your priority request <strong>{leadData.leadId}</strong> is active under our 90/90 Guarantee. Lead Tech Mark Vance (Cell: <strong>800-727-4373</strong>) is en route to <em>{leadData.address}</em>.
+            📲 <strong>Rapid Home Relief Alert:</strong> Hi {leadData.fullName}, your priority request <strong>{leadData.leadId}</strong> is active under our {SITE_CONFIG.guarantee.shortLabel}. Lead Tech Mark Vance (Cell: <strong>{DISPATCH_PHONE_DISPLAY}</strong>) is en route to <em>{leadData.address}</em>.
           </p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <a
-            href="tel:18007274373"
+            href={DISPATCH_PHONE_TEL}
             className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold text-sm text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
           >
             <PhoneCall className="w-4 h-4 animate-bounce" />

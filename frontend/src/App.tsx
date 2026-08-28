@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
-import { ScrapedLeadsQueue } from './components/ScrapedLeadsQueue';
 import { TrustBar } from './components/TrustBar';
 import { ProcessStepSection } from './components/ProcessStepSection';
 import { InsuranceSection } from './components/InsuranceSection';
@@ -74,11 +73,6 @@ export const App: React.FC = () => {
       {/* Main Split Screen Hero & Form */}
       <main className="flex-grow">
         <Hero onFormSubmitted={handleLeadSubmitted} />
-        
-        {/* Command Center Emergency Scraped Leads Queue */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ScrapedLeadsQueue />
-        </div>
 
         {/* Emergency Network Trust Bar */}
         <TrustBar />

@@ -1,6 +1,8 @@
 /**
  * Emergency Scraper Module (TypeScript Interface Definition)
  */
+import fs from 'fs';
+import path from 'path';
 
 export const DISPATCH_PHONE_NUMBER = "(702) 491-9899";
 
@@ -18,6 +20,7 @@ export interface PlatformTarget {
   type: string;
   url: string;
   description: string;
+  region?: string;
 }
 
 export interface PostPayload {
@@ -41,32 +44,87 @@ export interface IntentScoreResult {
   reason: string;
 }
 
-export const PLATFORM_TARGETS: PlatformTarget[] = [
+export interface NWSAlert {
+  event: string;
+  headline: string;
+  areaDesc: string;
+  description: string;
+  expires: string;
+}
+
+export interface NWSAlertCheckResult {
+  active: boolean;
+  alerts: NWSAlert[];
+  matchedEvents: string[];
+}
+
+export const TARGET_WEATHER_EVENTS = [
+  "Flood Warning",
+  "Flood Advisory",
+  "Flash Flood Warning",
+  "Severe Thunderstorm Warning"
+];
+
+export const SECONDARY_WEATHER_KEYWORDS: string[] = [
+  "garage flooding",
+  "ceiling drip",
+  "roof leak",
+  "sump pump",
+  "shop vac",
+  "standing water"
+];
+
+let isWeatherAlertActiveMode = false;
+
+export function setWeatherAlertActiveState(active: boolean): void {
+  isWeatherAlertActiveMode = active;
+}
+
+export function getWeatherAlertActiveState(): boolean {
+  return isWeatherAlertActiveMode;
+}
+
+export const DEFAULT_PLATFORM_TARGETS: PlatformTarget[] = [
   {
     name: 'Facebook Groups',
     type: 'Facebook Group',
     url: 'https://www.facebook.com/groups/lasvegascommunity/',
-    description: 'Local Las Vegas Community & Classifieds Facebook Group'
+    description: 'Local Las Vegas Community & Classifieds Facebook Group',
+    region: 'Las Vegas'
   },
   {
     name: 'Nextdoor Neighborhood',
     type: 'Nextdoor',
     url: 'https://nextdoor.com/city/las-vegas--nv/',
-    description: 'Las Vegas Neighborhood Feed'
+    description: 'Las Vegas Neighborhood Feed',
+    region: 'Las Vegas'
   },
   {
-    name: 'Public Incident Logs',
-    type: 'Public Incident Log',
-    url: 'https://www.lasvegasnevada.gov/api/incidents.rss',
-    description: 'City Emergency Public Service Incident Log'
-  },
-  {
-    name: 'Reddit Classifieds',
+    name: 'Greater Vegas Regional Reddit Classifieds',
     type: 'Reddit',
-    url: 'https://www.reddit.com/r/LasVegas/search.rss?q=plumber+OR+leak+OR+flood+OR+repair&restrict_sr=1&sort=new',
-    description: 'Subreddit Local Service Requests'
+    url: 'https://www.reddit.com/r/LasVegas+HendersonNV+NorthLasVegas+SpringValleyNV+CentennialHills/search.rss?q=plumber+OR+leak+OR+flood+OR+repair&restrict_sr=1&sort=new',
+    description: 'Consolidated Greater Vegas Regional Subreddits Service Requests',
+    region: 'Clark County'
   }
 ];
+
+export function loadPlatformTargets(): PlatformTarget[] {
+  try {
+    const configPath = path.join(process.cwd(), 'config', 'targets.json');
+    if (fs.existsSync(configPath)) {
+      const raw = fs.readFileSync(configPath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err: any) {
+    console.warn('⚠️ Could not load targets from config/targets.json, using defaults:', err.message);
+  }
+  return DEFAULT_PLATFORM_TARGETS;
+}
+
+export const PLATFORM_TARGETS: PlatformTarget[] = loadPlatformTargets();
 
 export const HIGH_INTENT_PHRASES: string[] = [
   "water pouring",
@@ -83,7 +141,6 @@ export const NEGATIVE_BLOCKLIST: string[] = [
   "news",
   "article",
   "forecast",
-  "weather",
   "diy",
   "how to",
   "renovation",
@@ -101,10 +158,75 @@ export const ACTIVE_DAMAGE_WORDS: string[] = [
 export const LOCATION_CONTEXTS: string[] = [
   "my kitchen", "our garage", "my ceiling", "my basement", "our house",
   "my bathroom", "our living room", "my roof", "in my home", "my main line",
-  "my property", "our home", "my yard"
+  "my property", "our home", "my yard", "garage", "ceiling", "attic", "hallway", "basement", "home", "house"
 ];
 
-export function calculateIntentScore(post: PostPayload): IntentScoreResult {
+export async function checkNWSWeatherAlerts(): Promise<NWSAlertCheckResult> {
+  const url = 'https://api.weather.gov/alerts/active?area=NV';
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': '(EmergencyLeadAgent/1.0, contact@emergencyrestoration.com)'
+      }
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ [NWS ALERT SCAN] NWS API returned status ${response.status}`);
+      return { active: false, alerts: [], matchedEvents: [] };
+    }
+
+    const data: any = await response.json();
+    const features = data?.features || [];
+
+    const activeAlerts: NWSAlert[] = [];
+    const matchedEvents = new Set<string>();
+
+    for (const feature of features) {
+      const props = feature?.properties || {};
+      const eventName = props.event || '';
+      const areaDesc = (props.areaDesc || '').toLowerCase();
+      const headline = (props.headline || '').toLowerCase();
+      const description = (props.description || '').toLowerCase();
+
+      const isTargetEvent = TARGET_WEATHER_EVENTS.some(evt =>
+        eventName.toLowerCase().includes(evt.toLowerCase())
+      );
+
+      const mentionsTargetArea =
+        areaDesc.includes('clark') ||
+        areaDesc.includes('las vegas') ||
+        areaDesc.includes('henderson') ||
+        areaDesc.includes('north las vegas') ||
+        headline.includes('clark') ||
+        headline.includes('las vegas') ||
+        description.includes('clark county') ||
+        description.includes('las vegas');
+
+      if (isTargetEvent && mentionsTargetArea) {
+        activeAlerts.push({
+          event: props.event,
+          headline: props.headline || '',
+          areaDesc: props.areaDesc || '',
+          description: props.description || '',
+          expires: props.expires || ''
+        });
+        matchedEvents.add(props.event);
+      }
+    }
+
+    const isActive = activeAlerts.length > 0;
+    return {
+      active: isActive,
+      alerts: activeAlerts,
+      matchedEvents: Array.from(matchedEvents)
+    };
+  } catch (error: any) {
+    console.error('❌ [NWS ALERT SCAN ERROR]', error.message);
+    return { active: false, alerts: [], matchedEvents: [] };
+  }
+}
+
+export function calculateIntentScore(post: PostPayload, isWeatherActiveOverride?: boolean): IntentScoreResult {
   const title = post.title || '';
   const text = post.text || post.contentSnippet || post.content || '';
   const timestamp = post.timestamp || post.pubDate || new Date().toISOString();
@@ -115,11 +237,11 @@ export function calculateIntentScore(post: PostPayload): IntentScoreResult {
   const now = new Date();
   const ageHours = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
 
-  if (isNaN(postDate.getTime()) || ageHours > 24) {
+  if (isNaN(postDate.getTime()) || ageHours > 336) {
     return {
       score: 0,
       passed: false,
-      reason: `Rejected: Post is older than 24 hours (${isNaN(ageHours) ? 'Invalid Date' : ageHours.toFixed(1) + 'h old'})`
+      reason: `Rejected: Post is older than 14 days (336 hours) (${isNaN(ageHours) ? 'Invalid Date' : ageHours.toFixed(1) + 'h old'})`
     };
   }
 
@@ -134,8 +256,18 @@ export function calculateIntentScore(post: PostPayload): IntentScoreResult {
     }
   }
 
+  const isWeatherActive = isWeatherActiveOverride !== undefined ? isWeatherActiveOverride : isWeatherAlertActiveMode;
+
+  let damageWordsToUse = [...ACTIVE_DAMAGE_WORDS];
+  let highIntentPhrasesToUse = [...HIGH_INTENT_PHRASES];
+
+  if (isWeatherActive) {
+    damageWordsToUse = [...damageWordsToUse, ...SECONDARY_WEATHER_KEYWORDS];
+    highIntentPhrasesToUse = [...highIntentPhrasesToUse, ...SECONDARY_WEATHER_KEYWORDS];
+  }
+
   let hasHighIntentPhrase = false;
-  for (const phrase of HIGH_INTENT_PHRASES) {
+  for (const phrase of highIntentPhrasesToUse) {
     if (fullText.includes(phrase.toLowerCase())) {
       hasHighIntentPhrase = true;
       break;
@@ -144,11 +276,18 @@ export function calculateIntentScore(post: PostPayload): IntentScoreResult {
 
   let hasActiveDamageWord = hasHighIntentPhrase;
   if (!hasActiveDamageWord) {
-    for (const word of ACTIVE_DAMAGE_WORDS) {
-      const regex = new RegExp(`\\b${word}\\b`, 'i');
-      if (regex.test(fullText)) {
-        hasActiveDamageWord = true;
-        break;
+    for (const word of damageWordsToUse) {
+      if (word.includes(' ')) {
+        if (fullText.includes(word.toLowerCase())) {
+          hasActiveDamageWord = true;
+          break;
+        }
+      } else {
+        const regex = new RegExp(`\\b${word}\\b`, 'i');
+        if (regex.test(fullText)) {
+          hasActiveDamageWord = true;
+          break;
+        }
       }
     }
   }
@@ -172,9 +311,14 @@ export function calculateIntentScore(post: PostPayload): IntentScoreResult {
     score += 0.45;
   }
 
+  if (isWeatherActive && (hasHighIntentPhrase || hasActiveDamageWord)) {
+    score = Math.max(score, 0.85);
+  }
+
   score = Math.min(1.0, Math.round(score * 100) / 100);
 
-  const passed = score >= 0.85 && hasActiveDamageWord && hasLocationContext;
+  const minRequiredScore = isWeatherActive ? 0.50 : 0.85;
+  const passed = score >= minRequiredScore && hasActiveDamageWord && (hasLocationContext || isWeatherActive);
 
   return {
     score,
@@ -183,7 +327,7 @@ export function calculateIntentScore(post: PostPayload): IntentScoreResult {
     hasActiveDamageWord,
     hasLocationContext,
     reason: passed
-      ? `Qualified: Score ${(score * 100).toFixed(0)}% meets 85% threshold`
-      : `Rejected: Score ${(score * 100).toFixed(0)}% below 85% threshold or missing location/damage context`
+      ? `Qualified: Score ${(score * 100).toFixed(0)}% meets ${isWeatherActive ? '50%' : '85%'} threshold${isWeatherActive ? ' (Weather Mode Active)' : ''}`
+      : `Rejected: Score ${(score * 100).toFixed(0)}% below ${isWeatherActive ? '50%' : '85%'} threshold or missing location/damage context`
   };
 }

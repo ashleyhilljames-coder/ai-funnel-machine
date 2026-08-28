@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown, ShieldAlert, PhoneCall } from 'lucide-react';
+import { DISPATCH_PHONE_DISPLAY, DISPATCH_PHONE_TEL } from '../config/site';
 
 export const FAQSection: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -95,11 +96,11 @@ export const FAQSection: React.FC = () => {
             </div>
           </div>
           <a
-            href="tel:18007274373"
+            href={DISPATCH_PHONE_TEL}
             className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm flex items-center gap-2 shrink-0 shadow-lg shadow-emerald-500/20"
           >
             <PhoneCall className="w-4 h-4" />
-            <span>(800) 727-4373</span>
+            <span>{DISPATCH_PHONE_DISPLAY}</span>
           </a>
         </div>
 

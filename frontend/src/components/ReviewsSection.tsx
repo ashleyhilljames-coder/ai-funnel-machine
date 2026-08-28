@@ -10,7 +10,7 @@ export const ReviewsSection: React.FC = () => {
       type: 'Burst Pipe Flood',
       rating: 5,
       timeAgo: '3 days ago',
-      quote: 'A main water line burst under my kitchen sink at 2:00 AM. I filled out their form and got a text in under 10 seconds. The crew arrived in 26 minutes—well under their 90-minute guarantee!',
+      quote: 'A main water line burst under my kitchen sink at 2:00 AM. I filled out their form and got a text in under 10 seconds. The crew arrived in 26 minutes—well under their same-day guarantee!',
       metrics: 'Extracted 420 Gallons • Arrived in 26 Mins'
     },
     {
@@ -134,7 +134,7 @@ export const ReviewsSection: React.FC = () => {
               </div>
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono">
                 Average Arrival Time: <strong>28 Minutes</strong><br />
-                The 90/90 Guarantee: <strong>100% On-Time</strong>
+                Same-Day Guarantee: <strong>100% On-Time</strong>
               </div>
             </div>
           </div>

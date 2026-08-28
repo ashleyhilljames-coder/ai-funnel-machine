@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
-    "rootDir": ".",
     "outDir": "./dist",
     "module": "commonjs",
     "target": "es2022",
-    "lib": ["es2022"],
+    "lib": ["es2022", "dom"],
     "types": ["node"],
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "sourceMap": true,
     "declaration": true,
     "strict": true,
@@ -15,7 +17,7 @@
     "moduleDetection": "force"
   },
   "include": ["src/**/*", "scraper/**/*"],
-  "exclude": ["node_modules", "src/test-*.ts", "dist", "frontend", "src/components/**/*"]
+  "exclude": ["node_modules", "dist", "frontend"]
 }
 
 

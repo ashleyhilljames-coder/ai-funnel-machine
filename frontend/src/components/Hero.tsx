@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, PhoneCall, CheckCircle2, Clock, Zap, DollarSign, Timer, ArrowRight } from 'lucide-react';
 import { LeadForm } from './LeadForm';
+import { DISPATCH_PHONE_DISPLAY, DISPATCH_PHONE_TEL, GUARANTEE_TITLE, GUARANTEE_TEXT, GUARANTEE_DISCLAIMER } from '../config/site';
 
 interface HeroProps {
   onFormSubmitted: (leadData: any) => void;
@@ -18,7 +19,7 @@ export const Hero: React.FC<HeroProps> = ({ onFormSubmitted }) => {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Hero Left Column: Copy & The 90/90 Guarantee Callout (7 Cols) */}
+          {/* Hero Left Column: Copy & Same-Day Guarantee Callout (7 Cols) */}
           <div className="lg:col-span-7 flex flex-col justify-center space-y-6 pt-1">
             
             {/* Live Dispatch Badge */}
@@ -40,24 +41,27 @@ export const Hero: React.FC<HeroProps> = ({ onFormSubmitted }) => {
               24/7 Priority Dispatch. Fill out our 90-second form to get an immediate text response and have vetted local crews dispatched to your door.
             </p>
 
-            {/* HIGH-IMPACT PROMINENT CALLOUT CARD: THE 90/90 GUARANTEE */}
+            {/* HIGH-IMPACT PROMINENT CALLOUT CARD: SAME-DAY ARRIVAL GUARANTEE */}
             <div className="p-5 rounded-2xl glass-card border-2 border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-dark-900 to-emerald-500/10 shadow-xl relative overflow-hidden group">
               <div className="flex items-start gap-4">
                 <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 shrink-0 shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
                   <Timer className="w-7 h-7 animate-pulse" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="px-2.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider">
-                      THE 90/90 GUARANTEE
+                      {GUARANTEE_TITLE}
                     </span>
                     <span className="text-xs text-amber-400 font-bold">100% Guaranteed Arrival</span>
                   </div>
                   <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                    On-Site in 90 Minutes or We Pay You $90.
+                    {GUARANTEE_TEXT}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-snug">
-                    When water or fire strikes, speed is critical. If our master restoration crew is not parked outside your property within 90 minutes of submission, we automatically credit you $90 cash.
+                    When water or fire strikes, speed is critical. If our restoration specialist isn't at your property the same day, we pay you $100.
+                  </p>
+                  <p className="text-[11px] text-slate-400 italic mt-2">
+                    {GUARANTEE_DISCLAIMER}
                   </p>
                 </div>
               </div>
@@ -118,10 +122,10 @@ export const Hero: React.FC<HeroProps> = ({ onFormSubmitted }) => {
                 </div>
               </div>
               <a
-                href="tel:18007274373"
+                href={DISPATCH_PHONE_TEL}
                 className="w-full sm:w-auto text-center px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-sm border border-emerald-500/30 transition-colors flex items-center justify-center gap-2"
               >
-                <span>(800) 727-4373</span>
+                <span>{DISPATCH_PHONE_DISPLAY}</span>
                 <ArrowRight className="w-4 h-4" />
               </a>
             </div>

@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Las Vegas Facebook Group",
+    "type": "Facebook Group",
+    "url": "https://www.facebook.com/groups/lasvegascommunity/",
+    "description": "Las Vegas Community & Classifieds Facebook Group",
+    "region": "Las Vegas"
+  },
+  {
+    "name": "Henderson Facebook Group",
+    "type": "Facebook Group",
+    "url": "https://www.facebook.com/groups/hendersoncommunity/",
+    "description": "Henderson NV Community & Emergency Relief Group",
+    "region": "Henderson"
+  },
+  {
+    "name": "North Las Vegas Facebook Group",
+    "type": "Facebook Group",
+    "url": "https://www.facebook.com/groups/northlasvegascommunity/",
+    "description": "North Las Vegas Community & Classifieds Hub",
+    "region": "North Las Vegas"
+  },
+  {
+    "name": "Spring Valley Facebook Group",
+    "type": "Facebook Group",
+    "url": "https://www.facebook.com/groups/springvalley/",
+    "description": "Spring Valley NV Neighbors & Services Group",
+    "region": "Spring Valley"
+  },
+  {
+    "name": "Centennial Hills Facebook Group",
+    "type": "Facebook Group",
+    "url": "https://www.facebook.com/groups/centennialhills/",
+    "description": "Centennial Hills Community & Local Network",
+    "region": "Centennial Hills"
+  },
+  {
+    "name": "Las Vegas Nextdoor",
+    "type": "Nextdoor",
+    "url": "https://nextdoor.com/city/las-vegas--nv/",
+    "description": "Las Vegas Neighborhood Feed",
+    "region": "Las Vegas"
+  },
+  {
+    "name": "Henderson Nextdoor",
+    "type": "Nextdoor",
+    "url": "https://nextdoor.com/city/henderson--nv/",
+    "description": "Henderson Neighborhood Feed",
+    "region": "Henderson"
+  },
+  {
+    "name": "North Las Vegas Nextdoor",
+    "type": "Nextdoor",
+    "url": "https://nextdoor.com/city/north-las-vegas--nv/",
+    "description": "North Las Vegas Neighborhood Feed",
+    "region": "North Las Vegas"
+  },
+  {
+    "name": "Spring Valley Nextdoor",
+    "type": "Nextdoor",
+    "url": "https://nextdoor.com/neighborhood/springvalley--las-vegas--nv/",
+    "description": "Spring Valley Neighborhood Feed",
+    "region": "Spring Valley"
+  },
+  {
+    "name": "Centennial Hills Nextdoor",
+    "type": "Nextdoor",
+    "url": "https://nextdoor.com/neighborhood/centennialhills--las-vegas--nv/",
+    "description": "Centennial Hills Neighborhood Feed",
+    "region": "Centennial Hills"
+  },
+  {
+    "name": "Greater Vegas Regional Reddit Classifieds",
+    "type": "Reddit",
+    "url": "https://www.reddit.com/r/LasVegas+HendersonNV+NorthLasVegas+SpringValleyNV+CentennialHills/search.rss?q=plumber+OR+leak+OR+flood+OR+repair&restrict_sr=1&sort=new",
+    "description": "Consolidated Greater Vegas Regional Subreddits Service Requests",
+    "region": "Clark County"
+  }
+]

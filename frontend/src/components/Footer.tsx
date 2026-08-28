@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldAlert, PhoneCall, Zap, Lock, MapPin, Mail } from 'lucide-react';
+import { DISPATCH_PHONE_DISPLAY, DISPATCH_PHONE_TEL, GUARANTEE_TITLE } from '../config/site';
 
 export const Footer: React.FC = () => {
   return (
@@ -48,7 +49,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2.5">
               <li><a href="#insurance" className="hover:text-emerald-400 transition-colors">Direct Insurance Billing</a></li>
               <li><a href="#insurance" className="hover:text-emerald-400 transition-colors">Approved Carrier Network</a></li>
-              <li><a href="#dispatch-process" className="hover:text-emerald-400 transition-colors">90-Minute Arrival Guarantee</a></li>
+              <li><a href="#dispatch-process" className="hover:text-emerald-400 transition-colors">{GUARANTEE_TITLE}</a></li>
               <li><a href="#insurance" className="hover:text-emerald-400 transition-colors">IICRC Master Certifications</a></li>
               <li><a href="#faq" className="hover:text-emerald-400 transition-colors">Emergency Intake FAQ</a></li>
             </ul>
@@ -62,7 +63,7 @@ export const Footer: React.FC = () => {
                 <PhoneCall className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="block font-bold text-white">24/7 Priority Hotline</span>
-                  <a href="tel:18007274373" className="text-amber-400 font-bold hover:underline">(800) 727-4373</a>
+                  <a href={DISPATCH_PHONE_TEL} className="text-amber-400 font-bold hover:underline">{DISPATCH_PHONE_DISPLAY}</a>
                 </div>
               </div>
 

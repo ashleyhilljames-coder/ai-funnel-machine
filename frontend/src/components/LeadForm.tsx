@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Zap, ArrowRight, CheckCircle2, AlertCircle, Phone, MapPin, Mail, Home, Layers, MessageSquare, Flame, Timer, MessageSquareText, PhoneCall } from 'lucide-react';
+import { SITE_CONFIG } from '../config/site';
+import { getLocalSubmissionMetadata } from '../utils/dateUtils';
 
 interface LeadFormProps {
   onSubmitted: (leadData: {
@@ -14,6 +16,8 @@ interface LeadFormProps {
     description: string;
     preferredContactMethod: 'sms' | 'call';
     createdAt: number;
+    createdAtLocal?: string;
+    qualifiesForSameDayGuarantee?: boolean;
   }) => void;
 }
 
@@ -74,7 +78,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
     }
 
     const cleanPhoneE164 = formatE164(formData.phone);
-    const creationTimestamp = Date.now();
+    const localMeta = getLocalSubmissionMetadata();
+    const creationTimestamp = localMeta.createdAt;
     const generatedDispatchId = `#RHR-${Math.floor(1000 + Math.random() * 9000)}`;
 
     setLoading(true);
@@ -82,7 +87,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
     let finalLeadId = generatedDispatchId;
 
     try {
-      // Direct POST to real Express API endpoint
+      // Direct POST to real Express API endpoint with explicit local timezone metadata
       const response = await fetch('/api/leads/create', {
         method: 'POST',
         headers: {
@@ -98,6 +103,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
           affectedRooms: formData.affectedRooms,
           description: formData.description.trim(),
           preferredContactMethod,
+          createdAt: creationTimestamp,
+          createdAtLocal: localMeta.localTimeString,
+          timeZone: localMeta.localTimezone,
+          qualifiesForSameDayGuarantee: localMeta.qualifiesForSameDayGuarantee,
         }),
       });
 
@@ -123,6 +132,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
       description: formData.description.trim(),
       preferredContactMethod,
       createdAt: creationTimestamp,
+      createdAtLocal: localMeta.localTimeString,
+      qualifiesForSameDayGuarantee: localMeta.qualifiesForSameDayGuarantee,
     };
 
     // Save dispatch state in localStorage for persistent Header lookup
@@ -377,7 +388,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">
-            <Timer className="w-3.5 h-3.5 text-amber-400" /> 90-Min $90 Cash Guarantee
+            <Timer className="w-3.5 h-3.5 text-amber-400" /> {SITE_CONFIG.guarantee.shortLabel} ${SITE_CONFIG.guarantee.payoutAmount} Cash Guarantee*
           </span>
         </div>
       </form>

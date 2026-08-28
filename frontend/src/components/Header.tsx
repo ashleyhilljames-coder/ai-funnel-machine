@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PhoneCall, ShieldAlert, Zap, Clock, CheckCircle2, Search, X, Timer } from 'lucide-react';
+import { DISPATCH_PHONE_DISPLAY, DISPATCH_PHONE_TEL, SITE_CONFIG } from '../config/site';
 
 interface HeaderProps {
   onTrackDispatch: (query: string) => void;
@@ -43,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({ onTrackDispatch }) => {
             </span>
             <span>● PRIORITY DISPATCH ACTIVE</span>
             <span className="hidden md:inline text-slate-900">|</span>
-            <span className="hidden md:inline font-medium">90/90 Guarantee: <strong className="underline">On-site in 90 mins or we pay $90</strong></span>
+            <span className="hidden md:inline font-medium">{SITE_CONFIG.guarantee.shortLabel}: <strong className="underline">On-site same day or we pay ${SITE_CONFIG.guarantee.payoutAmount}*</strong></span>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-semibold">
@@ -105,11 +106,11 @@ export const Header: React.FC<HeaderProps> = ({ onTrackDispatch }) => {
 
             {/* Call Hotline Button */}
             <a
-              href="tel:18007274373"
+              href={DISPATCH_PHONE_TEL}
               className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5"
             >
               <PhoneCall className="w-3.5 h-3.5 animate-bounce" />
-              <span className="font-black tracking-wide hidden sm:inline">(800) 727-4373</span>
+              <span className="font-black tracking-wide hidden sm:inline">{DISPATCH_PHONE_DISPLAY}</span>
               <span className="font-black tracking-wide sm:hidden">CALL 24/7</span>
             </a>
           </div>

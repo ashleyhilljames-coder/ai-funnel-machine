@@ -59,8 +59,11 @@ async function fetchRecentDispatches() {
   async function fetchScrapedQueue() {
     try {
       const response = await fetch('/api/leads/scraped');
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
       const data = await response.json();
-      if (data.success && data.leads) {
+      if (data.success && Array.isArray(data.leads)) {
         renderScrapedQueue(data.leads);
       }
     } catch (err) {
@@ -192,6 +195,7 @@ async function fetchRecentDispatches() {
           } else {
             alert(`❌ SMS Dispatch Error: ${data.error}`);
             target.disabled = false;
+          }
         } catch (err) {
           alert(`❌ Network Error: ${err.message}`);
           target.disabled = false;
