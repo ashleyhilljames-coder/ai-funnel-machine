@@ -68,7 +68,7 @@ export const TrustBar: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-emerald-400" />
-            <span>Guaranteed 90-Minute Rapid Arrival</span>
+            <span>Same-Day Arrival Guarantee</span>
           </div>
         </div>
       </div>

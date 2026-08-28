@@ -12,7 +12,7 @@ export const FAQSection: React.FC = () => {
     },
     {
       q: 'How fast will local crews arrive at my home?',
-      a: 'Our priority dispatch network guarantees on-site arrival within 90 minutes or less, 24/7/365. As soon as you submit our 90-second form, you receive an automated text confirmation with your assigned technician details and live status.'
+      a: 'Our priority dispatch network operates under our Same-Day Arrival Guarantee (or we pay you $100 for emergency requests submitted before 3:00 PM local time). As soon as you submit our fast intake form, you receive an immediate text confirmation with your assigned technician details and live status.'
     },
     {
       q: 'What should I do immediately while waiting for the emergency restoration team?',

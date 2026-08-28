@@ -137,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({ onTrackDispatch }) => {
             </div>
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Enter your <strong>Dispatch ID</strong> (e.g. <code>#RHR-8492</code>) or the <strong>Phone Number</strong> used during intake to re-open your live 90-minute countdown timer.
+              Enter your <strong>Dispatch ID</strong> (e.g. <code>#RHR-8492</code>) or the <strong>Phone Number</strong> used during intake to re-open your live dispatch tracker.
             </p>
 
             {lookupError && (
@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({ onTrackDispatch }) => {
                 type="submit"
                 className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wider shadow-md transition-all cursor-pointer"
               >
-                REOPEN 90-MIN COUNTDOWN TIMER
+                REOPEN LIVE DISPATCH TRACKER
               </button>
             </form>
           </div>

@@ -14,7 +14,7 @@ export const ServicesSection: React.FC = () => {
       borderColor: 'border-blue-500/30',
       description: 'Immediate industrial water extraction, structural thermal drying, moisture mapping, and hardwood/carpet restoration.',
       highlights: [
-        '90-Min Guaranteed Response',
+        'Same-Day Guaranteed Arrival',
         'Sub-Floor Drying & Moisture Detection',
         'Anti-Microbial Disinfection Treatment',
         'Direct Insurance Claim Handling'

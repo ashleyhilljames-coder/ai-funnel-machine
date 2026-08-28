@@ -159,8 +159,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
             <Timer className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">90-Second Priority Intake</h2>
-            <p className="text-xs text-amber-400 font-semibold">Starts Your 90-Minute Guaranteed Timer</p>
+            <h2 className="text-lg font-bold text-white tracking-wide">Quick Priority Intake</h2>
+            <p className="text-xs text-amber-400 font-semibold">Activates Same-Day Priority Dispatch</p>
           </div>
         </div>
         <span className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold uppercase tracking-wider">
@@ -375,7 +375,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
             </div>
           ) : (
             <>
-              <span>DISPATCH CREW & START 90-MIN TIMER</span>
+              <span>DISPATCH SPECIALIST NOW</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </>
           )}

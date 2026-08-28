@@ -38,7 +38,7 @@ export const Hero: React.FC<HeroProps> = ({ onFormSubmitted }) => {
 
             {/* Subheadline */}
             <p className="text-base sm:text-lg text-slate-300 font-normal leading-relaxed">
-              24/7 Priority Dispatch. Fill out our 90-second form to get an immediate text response and have vetted local crews dispatched to your door.
+              24/7 Priority Dispatch. Fill out our quick emergency form to get an immediate text response and have vetted local crews dispatched to your door.
             </p>
 
             {/* HIGH-IMPACT PROMINENT CALLOUT CARD: SAME-DAY ARRIVAL GUARANTEE */}

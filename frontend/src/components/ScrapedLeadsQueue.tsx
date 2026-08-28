@@ -138,7 +138,7 @@ export const ScrapedLeadsQueue: React.FC = () => {
   };
 
   const getDefaultSmsMessage = (lead: ScrapedLead): string => {
-    return `Hi ${lead.fullName}, this is Rapid Home Relief. We saw your post regarding ${lead.emergencyType}. Our local certified mitigation crew is available to dispatch immediately with our 90-Min Arrival Guarantee. Tap here to track dispatch: https://rapidhomerelief.com/dispatch`;
+    return `Hi ${lead.fullName}, this is Rapid Home Relief. We saw your post regarding ${lead.emergencyType}. Our local certified mitigation crew is available to dispatch immediately with our Same-Day Arrival Guarantee. Tap here to track dispatch: https://rapidhomerelief.com/dispatch`;
   };
 
   const getLeadSmsMessage = (lead: ScrapedLead): string => {

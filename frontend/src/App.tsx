@@ -90,7 +90,7 @@ export const App: React.FC = () => {
       {/* High-Trust Footer */}
       <Footer />
 
-      {/* Post-Submission Live Dispatch Tracker & 90-Min Countdown Modal */}
+      {/* Post-Submission Live Dispatch Tracker & Countdown Modal */}
       <SMSModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
