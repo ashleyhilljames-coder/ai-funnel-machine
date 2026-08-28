@@ -8,7 +8,7 @@ COPY frontend/package*.json frontend/vite.config.ts frontend/tsconfig*.json fron
 
 # Install root and frontend node dependencies
 RUN npm install
-RUN npm --prefix frontend install
+RUN cd frontend && npm install
 
 # Copy source files for backend, frontend, scrapers, and static assets
 COPY src ./src
