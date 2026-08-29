@@ -9332,5 +9332,31 @@
     "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
     "suggested_reply": "",
     "processedAt": "2026-08-29T21:38:44.763Z"
+  },
+  {
+    "id": "CBMiqwFBVV95cUxNQjhoaV9leG40QkpRX0lyWXhWTkt2NWdVVE5zUHJ4b1RQTmhVUXZTdlpBX1AyanJWSTFTOG5jcHE4cGN0RTZJam9QZ0NudUM2ME9vbmNlbmZGOFN2dzdKblhpVXl0c1RBeGY2U2JoNTR3bnV4OGNRSXNENjY0eFVRQlNQVGZGREVqb3Bhell2Q1NQQzdnbTJrd3ZielR3Y3JxUmFuMFA2akVuZFE",
+    "title": "\"uic.io/de/kyusei/kippou/shiroku/1512/03/17/\" - Results on X | Live Posts & Updates - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNQjhoaV9leG40QkpRX0lyWXhWTkt2NWdVVE5zUHJ4b1RQTmhVUXZTdlpBX1AyanJWSTFTOG5jcHE4cGN0RTZJam9QZ0NudUM2ME9vbmNlbmZGOFN2dzdKblhpVXl0c1RBeGY2U2JoNTR3bnV4OGNRSXNENjY0eFVRQlNQVGZGREVqb3Bhell2Q1NQQzdnbTJrd3ZielR3Y3JxUmFuMFA2akVuZFE?oc=5",
+    "source": "X / Twitter",
+    "date": "2026-08-27T22:49:31.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Score 0% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-08-29T23:51:53.602Z"
+  },
+  {
+    "id": "CBMiW0FVX3lxTE5oNi1HRDYwS19sXzdiVmpWbUxkSlZCelVkYnUxTGxFSkdIcW11dGhtU3RRSWFpMlVpMjFFazFZYlpkUDJoRTdWdi1Rbnk1V0x6T0ZQZXAyakhycms",
+    "title": "Bski's Classroom on X - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5oNi1HRDYwS19sXzdiVmpWbUxkSlZCelVkYnUxTGxFSkdIcW11dGhtU3RRSWFpMlVpMjFFazFZYlpkUDJoRTdWdi1Rbnk1V0x6T0ZQZXAyakhycms?oc=5",
+    "source": "X / Twitter",
+    "date": "2025-11-20T04:07:12.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (6787.7h old)",
+    "suggested_reply": "",
+    "processedAt": "2026-08-29T23:51:53.649Z"
   }
 ]

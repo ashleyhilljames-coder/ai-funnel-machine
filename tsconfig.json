@@ -19,5 +19,3 @@
   "include": ["src/**/*", "scraper/**/*"],
   "exclude": ["node_modules", "dist", "frontend"]
 }
-
-
