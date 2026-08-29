@@ -18,9 +18,9 @@ export const Header: React.FC<HeaderProps> = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full transition-all duration-300">
-      {/* Refined Top Announcement Bar */}
-      <div className="bg-slate-900 border-b border-amber-500/20 text-slate-200 px-4 py-2 text-xs sm:text-sm font-semibold shadow-sm">
+    <>
+      {/* Top Announcement Bar - Unpinned Normal Flow (Scrolls Off-Screen Naturally) */}
+      <div className="relative w-full bg-slate-900 border-b border-amber-500/20 text-slate-200 px-4 py-2 text-xs sm:text-sm font-semibold shadow-sm z-30">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
           <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
             <span className="text-amber-400 font-bold">⚡ Same-Day Guarantee:</span>
@@ -39,8 +39,8 @@ export const Header: React.FC<HeaderProps> = () => {
         </div>
       </div>
 
-      {/* Main Sticky Navbar */}
-      <div className={`transition-all duration-300 ${
+      {/* Primary Navigation Bar - Sticky Pinned to Top */}
+      <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         scrolled 
           ? 'bg-dark-900/95 backdrop-blur-md py-3 border-b border-slate-800 shadow-2xl' 
           : 'bg-dark-950/90 backdrop-blur-sm py-4 border-b border-slate-800/80'
@@ -85,7 +85,7 @@ export const Header: React.FC<HeaderProps> = () => {
           </div>
 
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 };
