@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Resend } from 'resend';
 import { supabaseAdmin } from '../lib/supabase';
 import twilio from 'twilio';
 import { apiKeyAuth } from '../middleware/auth';
@@ -9,6 +10,10 @@ const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
+
+const resendApiKey = process.env.RESEND_API_KEY;
+const resendClient = resendApiKey ? new Resend(resendApiKey) : null;
+const dispatchAdminEmail = process.env.DISPATCH_ADMIN_EMAIL || 'ashley@syncroscale.com';
 
 // Helper function to format phone numbers to E.164 (+1XXXXXXXXXX)
 export function toE164Phone(phone: string): string {
@@ -43,6 +48,12 @@ router.post('/create', async (req, res) => {
     const water_source = typeof rawSource === 'string' ? rawSource.trim() : rawSource;
     const affected_rooms = typeof rawRooms === 'string' ? rawRooms.trim() : rawRooms;
     const notes = typeof rawNotes === 'string' ? rawNotes.trim() : rawNotes;
+
+    const createdAtLocal = req.body?.createdAtLocal || new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'full',
+      timeStyle: 'medium',
+    }).format(new Date());
 
     if (!homeowner_name || typeof homeowner_name !== 'string' || !homeowner_name.trim()) {
       return res.status(400).json({
@@ -89,6 +100,7 @@ router.post('/create', async (req, res) => {
       `[Affected Rooms: ${affected_rooms || 'N/A'}]`,
       `[Address: ${property_address || 'N/A'}]`,
       `[Email: ${email || 'N/A'}]`,
+      `[Local Time: ${createdAtLocal}]`,
       notes ? `Description: ${notes}` : ''
     ].filter(Boolean);
 
@@ -121,9 +133,122 @@ router.post('/create', async (req, res) => {
 
     const finalLeadId = supabaseData?.id ? String(supabaseData.id) : generatedLeadId;
 
+    // Trigger instant Resend emergency notification email if API key present
+    let resendEmailStatus = 'skipped';
+    let resendEmailId: string | undefined = undefined;
+
+    if (resendClient && resendApiKey) {
+      try {
+        const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #0b0f17; color: #f1f5f9; margin: 0; padding: 24px; }
+            .container { max-width: 600px; margin: 0 auto; background: #111827; border: 1px solid #f59e0b; border-radius: 16px; padding: 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+            .header { border-bottom: 2px solid #f59e0b; padding-bottom: 16px; margin-bottom: 20px; text-align: center; }
+            .title { font-size: 22px; font-weight: 900; color: #ffffff; margin: 0; letter-spacing: -0.5px; }
+            .subtitle { font-size: 13px; font-weight: 700; color: #f59e0b; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
+            .badge { display: inline-block; background: #10b981; color: #022c22; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; margin-bottom: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th { text-align: left; padding: 10px 12px; background: #1f2937; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #374151; width: 35%; }
+            td { padding: 12px; background: #0f172a; color: #ffffff; font-size: 14px; font-weight: 600; border-bottom: 1px solid #1e293b; }
+            .highlight { color: #34d399; font-weight: 800; }
+            .urgent { color: #fbbf24; font-weight: 800; }
+            .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #1e293b; font-size: 11px; color: #64748b; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <span class="badge">⚡ PRIORITY DISPATCH ACTIVE</span>
+              <h1 class="title">NEW EMERGENCY PROPERTY RESTORATION LEAD</h1>
+              <p class="subtitle">Same-Day Arrival Guarantee Network Alert</p>
+            </div>
+
+            <table>
+              <tr>
+                <th>Dispatch ID</th>
+                <td class="urgent">${finalLeadId}</td>
+              </tr>
+              <tr>
+                <th>Full Name</th>
+                <td>${homeowner_name}</td>
+              </tr>
+              <tr>
+                <th>Cell Phone</th>
+                <td class="highlight"><a href="tel:${homeowner_phone}" style="color: #34d399; text-decoration: underline;">${homeowner_phone}</a></td>
+              </tr>
+              <tr>
+                <th>Preferred Method</th>
+                <td>${preferred_contact}</td>
+              </tr>
+              <tr>
+                <th>Email Address</th>
+                <td>${email || 'N/A'}</td>
+              </tr>
+              <tr>
+                <th>Property Address</th>
+                <td>${property_address || 'N/A'}</td>
+              </tr>
+              <tr>
+                <th>Emergency Damage Type</th>
+                <td class="urgent">${damage_type || 'Unspecified Emergency'}</td>
+              </tr>
+              <tr>
+                <th>Damage Source</th>
+                <td>${water_source || 'N/A'}</td>
+              </tr>
+              <tr>
+                <th>Affected Rooms</th>
+                <td>${affected_rooms || 'N/A'}</td>
+              </tr>
+              <tr>
+                <th>Emergency Description</th>
+                <td>${notes || 'No description provided.'}</td>
+              </tr>
+              <tr>
+                <th>Las Vegas Local Time</th>
+                <td>${createdAtLocal}</td>
+              </tr>
+            </table>
+
+            <div class="footer">
+              <p>Rapid Home Relief 24/7 Emergency Response Network • Automated Dispatch System</p>
+              <p>Direct Operator Hotline: 702-491-9899 | dispatch@rapidhomerelief.com</p>
+            </div>
+          </div>
+        </body>
+        </html>
+        `;
+
+        const resendResponse = await resendClient.emails.send({
+          from: 'Rapid Home Relief Emergency <onboarding@resend.dev>',
+          to: [dispatchAdminEmail],
+          subject: '⚡ NEW EMERGENCY LEAD: Rapid Home Relief',
+          html: emailHtml,
+        });
+
+        if (resendResponse?.data?.id) {
+          resendEmailId = resendResponse.data.id;
+          resendEmailStatus = 'sent';
+          console.log(`⚡ [Resend Emergency Email Sent] ID: ${resendEmailId} to ${dispatchAdminEmail}`);
+        } else if (resendResponse?.error) {
+          console.warn('⚠️ [Resend Email Warning]:', resendResponse.error);
+          resendEmailStatus = `failed: ${resendResponse.error.message || 'Error'}`;
+        }
+      } catch (emailErr: any) {
+        console.error('❌ [Resend Email Exception]:', emailErr?.message || emailErr);
+        resendEmailStatus = `exception: ${emailErr?.message || 'Unknown'}`;
+      }
+    }
+
     return res.status(201).json({
       success: true,
       leadId: finalLeadId,
+      resendEmailStatus,
+      resendEmailId,
       lead: supabaseData || {
         id: finalLeadId,
         homeowner_name,
