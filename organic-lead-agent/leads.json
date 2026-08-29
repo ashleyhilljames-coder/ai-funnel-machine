@@ -9319,5 +9319,18 @@
     "summary": "Filtered out by intent rules: Rejected: Score 0% below 85% threshold or missing location/damage context",
     "suggested_reply": "",
     "processedAt": "2026-08-29T20:17:01.930Z"
+  },
+  {
+    "id": "https://www.craigslist.org/view/d/las-vegas-plumbing-plumber-drain-water/rBGL85DAVLCWF7Gzn8v36Z",
+    "title": "Plumbing Plumber Drain Water Heater Air Conditioning AC Clog Heat\n\n                \n                    $0\n                    \n                        ⭐️⭐️⭐️⭐️⭐️Las Vegas, Henderson, North Las Vegas",
+    "link": "https://www.craigslist.org/view/d/las-vegas-plumbing-plumber-drain-water/rBGL85DAVLCWF7Gzn8v36Z",
+    "source": "Craigslist",
+    "date": "2026-08-29T21:38:43.663Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0.45,
+    "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-08-29T21:38:44.763Z"
   }
 ]
