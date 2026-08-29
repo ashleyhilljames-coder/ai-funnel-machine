@@ -1,10 +1,8 @@
 import React from 'react';
-import { ShieldAlert, PhoneCall, Zap, Lock, MapPin, Mail } from 'lucide-react';
+import { ShieldAlert, PhoneCall, Zap, Lock, MapPin } from 'lucide-react';
 import {
   DISPATCH_PHONE_DISPLAY,
   DISPATCH_PHONE_TEL,
-  DISPATCH_EMAIL_DISPLAY,
-  DISPATCH_EMAIL_MAILTO,
   GUARANTEE_TITLE,
 } from '../config/site';
 
@@ -79,17 +77,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLegalModal }) => {
 
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>Regional Dispatch Hubs Active Nationwide</span>
-              </div>
-
-              <div className="flex items-start gap-2.5">
-                <Mail className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <a
-                  href={DISPATCH_EMAIL_MAILTO}
-                  className="text-slate-300 hover:text-emerald-400 font-medium transition-colors"
-                >
-                  {DISPATCH_EMAIL_DISPLAY}
-                </a>
+                <span>Serving Nevada, Utah & Arizona</span>
               </div>
             </div>
           </div>
