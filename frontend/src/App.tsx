@@ -76,8 +76,8 @@ export const App: React.FC = () => {
 
   return (
     <div className="bg-dark-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
-      {/* Sticky Header with Track Dispatch Lookup */}
-      <Header onTrackDispatch={handleTrackDispatchLookup} />
+      {/* Sticky Header */}
+      <Header />
 
       {/* Main Split Screen Hero & Form */}
       <main className="flex-grow">
