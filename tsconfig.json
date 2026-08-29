@@ -6,8 +6,6 @@
     "lib": ["es2022", "dom"],
     "types": ["node"],
     "jsx": "react-jsx",
-    "moduleResolution": "node",
-    "ignoreDeprecations": "6.0",
     "sourceMap": true,
     "declaration": true,
     "strict": true,
