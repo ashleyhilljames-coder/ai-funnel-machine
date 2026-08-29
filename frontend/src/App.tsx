@@ -7,9 +7,13 @@ import { InsuranceSection } from './components/InsuranceSection';
 import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
 import { SMSModal } from './components/SMSModal';
+import { LegalModal } from './components/LegalModal';
 
 export const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState<'privacy' | 'terms'>('privacy');
+
   const [activeLead, setActiveLead] = useState<{
     leadId: string;
     fullName: string;
@@ -37,6 +41,11 @@ export const App: React.FC = () => {
   }) => {
     setActiveLead(leadData);
     setIsModalOpen(true);
+  };
+
+  const handleOpenLegalModal = (tab: 'privacy' | 'terms') => {
+    setLegalTab(tab);
+    setIsLegalModalOpen(true);
   };
 
   const handleTrackDispatchLookup = (query: string) => {
@@ -88,13 +97,20 @@ export const App: React.FC = () => {
       </main>
 
       {/* High-Trust Footer */}
-      <Footer />
+      <Footer onOpenLegalModal={handleOpenLegalModal} />
 
       {/* Post-Submission Live Dispatch Tracker & Countdown Modal */}
       <SMSModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         leadData={activeLead}
+      />
+
+      {/* Legal & Privacy Overlay Modal */}
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalTab}
       />
     </div>
   );

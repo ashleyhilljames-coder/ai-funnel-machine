@@ -1,8 +1,18 @@
 import React from 'react';
 import { ShieldAlert, PhoneCall, Zap, Lock, MapPin, Mail } from 'lucide-react';
-import { DISPATCH_PHONE_DISPLAY, DISPATCH_PHONE_TEL, GUARANTEE_TITLE } from '../config/site';
+import {
+  DISPATCH_PHONE_DISPLAY,
+  DISPATCH_PHONE_TEL,
+  DISPATCH_EMAIL_DISPLAY,
+  DISPATCH_EMAIL_MAILTO,
+  GUARANTEE_TITLE,
+} from '../config/site';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenLegalModal?: (tab: 'privacy' | 'terms') => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenLegalModal }) => {
   return (
     <footer className="bg-dark-950 text-slate-400 text-xs py-14 border-t border-slate-800 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,7 +84,12 @@ export const Footer: React.FC = () => {
 
               <div className="flex items-start gap-2.5">
                 <Mail className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>dispatch@rapidhomerelief.com</span>
+                <a
+                  href={DISPATCH_EMAIL_MAILTO}
+                  className="text-slate-300 hover:text-emerald-400 font-medium transition-colors"
+                >
+                  {DISPATCH_EMAIL_DISPLAY}
+                </a>
               </div>
             </div>
           </div>
@@ -89,8 +104,20 @@ export const Footer: React.FC = () => {
             <span className="flex items-center gap-1 text-slate-400">
               <Lock className="w-3 h-3 text-emerald-400" /> 256-Bit SSL Encrypted Intake
             </span>
-            <span>Privacy Policy</span>
-            <span>Terms of Emergency Service</span>
+
+            <button
+              onClick={() => onOpenLegalModal?.('privacy')}
+              className="text-slate-400 hover:text-emerald-400 underline transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+
+            <button
+              onClick={() => onOpenLegalModal?.('terms')}
+              className="text-slate-400 hover:text-emerald-400 underline transition-colors cursor-pointer"
+            >
+              Terms of Emergency Service
+            </button>
           </div>
         </div>
 

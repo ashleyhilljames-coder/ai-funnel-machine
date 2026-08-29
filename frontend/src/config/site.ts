@@ -6,6 +6,10 @@ export const SITE_CONFIG = {
     tel: "tel:7024919899",
     raw: "7024919899",
   },
+  email: {
+    display: "dispatch@rapidhomerelief.com",
+    mailto: "mailto:dispatch@rapidhomerelief.com",
+  },
   guarantee: {
     title: "Same-Day Arrival Guarantee",
     shortLabel: "Same-Day Guarantee",
@@ -20,6 +24,8 @@ export const SITE_CONFIG = {
 
 export const DISPATCH_PHONE_DISPLAY = SITE_CONFIG.phone.display;
 export const DISPATCH_PHONE_TEL = SITE_CONFIG.phone.tel;
+export const DISPATCH_EMAIL_DISPLAY = SITE_CONFIG.email.display;
+export const DISPATCH_EMAIL_MAILTO = SITE_CONFIG.email.mailto;
 export const GUARANTEE_TITLE = SITE_CONFIG.guarantee.title;
 export const GUARANTEE_TEXT = SITE_CONFIG.guarantee.text;
 export const GUARANTEE_DISCLAIMER = SITE_CONFIG.guarantee.disclaimer;
