@@ -9358,5 +9358,18 @@
     "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (6787.7h old)",
     "suggested_reply": "",
     "processedAt": "2026-08-29T23:51:53.649Z"
+  },
+  {
+    "id": "CBMiO0FVX3lxTFA3ckZNX1RSaEFYNXMtMEdXT1E5bkRqbkVMNEV4N05DbEtPWi1lSWhWR1dPMzFrdzBDaVFr",
+    "title": "Sunny Lane (@sunnylane) on X - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiO0FVX3lxTFA3ckZNX1RSaEFYNXMtMEdXT1E5bkRqbkVMNEV4N05DbEtPWi1lSWhWR1dPMzFrdzBDaVFr?oc=5",
+    "source": "X / Twitter",
+    "date": "2024-06-04T23:50:35.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (19584.4h old)",
+    "suggested_reply": "",
+    "processedAt": "2026-08-30T00:16:47.483Z"
   }
 ]
