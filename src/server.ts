@@ -7,8 +7,8 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { z, ZodError, type ZodIssue } from 'zod';
 import { ingestLead } from './ingest.js';
-import leadRoutes, { addScrapedLead } from './routes/leads';
-import missionControlRoutes from './routes/missionControl';
+import leadRoutes, { addScrapedLead } from './routes/leads.js';
+import missionControlRoutes from './routes/missionControl.js';
 
 export const CallInterceptSchema = z.object({
   callSid: z.string().min(1),
@@ -375,6 +375,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     success: false,
     error: err.message || 'Internal server error',
   });
+});
+
+const PORT = Number(process.env.PORT) || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 syncro-backend listening on port ${PORT}`);
 });
 
 export default app;

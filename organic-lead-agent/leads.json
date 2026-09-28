@@ -15273,5 +15273,31 @@
     "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
     "suggested_reply": "",
     "processedAt": "2026-09-28T10:00:48.071Z"
+  },
+  {
+    "id": "CBMiPEFVX3lxTFA0YndPbDFkYW9zc1diXzVZdTIteVZVRzdITGhBVW16dU1OcFhjT0RlLTFmR3ZnVkl1VE1HdQ",
+    "title": "Rookie425 (@Rookie_425) - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiPEFVX3lxTFA0YndPbDFkYW9zc1diXzVZdTIteVZVRzdITGhBVW16dU1OcFhjT0RlLTFmR3ZnVkl1VE1HdQ?oc=5",
+    "source": "X / Twitter",
+    "date": "2024-06-09T08:40:22.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (20185.4h old)",
+    "suggested_reply": "",
+    "processedAt": "2026-09-28T10:03:40.177Z"
+  },
+  {
+    "id": "https://www.craigslist.org/view/d/las-vegas-plumbing-plumber-drain-water/cG2n5gr3yMf2dD5o5M52SS",
+    "title": "Plumbing Plumber Drain Water Heater Air Conditioning AC Clog Heat \n\n                \n                    $0\n                    \n                        ⭐️⭐️⭐️⭐️⭐️Henderson / Las Vegas /North Las Vegas",
+    "link": "https://www.craigslist.org/view/d/las-vegas-plumbing-plumber-drain-water/cG2n5gr3yMf2dD5o5M52SS",
+    "source": "Craigslist",
+    "date": "2026-09-28T14:56:38.788Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0.45,
+    "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-09-28T14:56:39.121Z"
   }
 ]

@@ -30,7 +30,7 @@ const LEADS_FILE_PATH = path.join(__dirname, 'leads.json');
 
 // System Configuration
 const CONFIG = {
-  port: parseInt(process.env.PORT || '3000', 10),
+  port: parseInt(process.env.PORT || '3005', 10),
   targetWebhookUrl: process.env.TARGET_WEBHOOK_URL || 'http://localhost:3000/webhook/lead',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
