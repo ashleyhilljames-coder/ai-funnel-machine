@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { supabaseAdmin } from '../lib/supabase';
 import twilio from 'twilio';
 import { apiKeyAuth } from '../middleware/auth';
+import { missionDb } from '../services/missionControlDb.js';
 
 const router = Router();
 
