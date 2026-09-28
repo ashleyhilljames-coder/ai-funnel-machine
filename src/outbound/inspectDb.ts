@@ -1,8 +1,14 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
+import * as fs from 'fs';
 
 function inspectDatabase() {
-  const dbPath = path.join(__dirname, '../../syncro_scale.db');
+  const dbPath = process.env.DB_PATH || (
+    process.env.DATA_DIR
+      ? path.join(process.env.DATA_DIR, 'syncro_scale.db')
+      : path.join(process.cwd(), 'syncro_scale.db')
+  );
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   console.log("=========================================================================");
   console.log(`🔍 [Agentic Nexus] Database Inspector Utility`);
   console.log(`📁 Target File: ${dbPath}`);

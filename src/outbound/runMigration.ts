@@ -1,8 +1,14 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
+import * as fs from 'fs';
 
 function runMigration() {
-  const dbPath = path.join(__dirname, '../../syncro_scale.db');
+  const dbPath = process.env.DB_PATH || (
+    process.env.DATA_DIR
+      ? path.join(process.env.DATA_DIR, 'syncro_scale.db')
+      : path.join(process.cwd(), 'syncro_scale.db')
+  );
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   console.log(`🚀 Running database migration on: ${dbPath}`);
   
   const db = new Database(dbPath);

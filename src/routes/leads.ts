@@ -25,7 +25,7 @@ export function toE164Phone(phone: string): string {
 }
 
 // POST /api/leads/create
-router.post('/create', async (req, res) => {
+router.post('/create', apiKeyAuth, async (req, res) => {
   try {
     const rawName = req.body?.fullName || req.body?.homeowner_name || req.body?.name;
     const rawPhone = req.body?.phone || req.body?.homeowner_phone;
@@ -65,7 +65,7 @@ router.post('/create', async (req, res) => {
     if (!rawPhoneStr || typeof rawPhoneStr !== 'string' || !rawPhoneStr.trim()) {
       return res.status(400).json({
         success: false,
-        error: 'homeowner_phone (Phone Number) is required',
+        error: 'homeowner_phone is required',
       });
     }
 

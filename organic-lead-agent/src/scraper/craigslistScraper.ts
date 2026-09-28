@@ -98,13 +98,17 @@ export async function fetchCraigslistLeads(endpoints = CRAIGSLIST_RSS_ENDPOINTS)
     try {
       console.log(`📡 [CRAIGSLIST SCRAPER] Fetching RSS feed: ${endpoint}`);
       const res = await fetch(endpoint, {
-        headers: CRAIGSLIST_HEADERS
+        headers: CRAIGSLIST_HEADERS,
+        signal: AbortSignal.timeout(10000)
       });
 
       if (!res.ok) {
         console.warn(`⚠️ [CRAIGSLIST SCRAPER] HTTP ${res.status} when fetching ${endpoint}. Trying HTML direct search fallback...`);
         const fallbackUrl = endpoint.replace('?format=rss&', '?');
-        const fallbackRes = await fetch(fallbackUrl, { headers: CRAIGSLIST_HEADERS });
+        const fallbackRes = await fetch(fallbackUrl, {
+          headers: CRAIGSLIST_HEADERS,
+          signal: AbortSignal.timeout(10000)
+        });
         if (fallbackRes.ok) {
           const html = await fallbackRes.text();
           const parsedHtmlLeads = parseCraigslistHtml(html);

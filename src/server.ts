@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { z, ZodError, type ZodIssue } from 'zod';
 import { ingestLead } from './ingest.js';
 import leadRoutes, { addScrapedLead } from './routes/leads';
+import missionControlRoutes from './routes/missionControl';
 
 export const CallInterceptSchema = z.object({
   callSid: z.string().min(1),
@@ -225,6 +226,7 @@ app.post('/api/leads', async (req, res) => {
 });
 
 app.use('/api/leads', leadRoutes);
+app.use('/api/mission-control', missionControlRoutes);
 
 // ⚡ LIVE INTERCEPT ROUTE: Instantly hands a streaming AI call over to a live field tech's cell phone
 app.post('/api/call/intercept', async (req, res) => {

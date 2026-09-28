@@ -32,7 +32,8 @@ export async function fetchXLeads(endpoints = X_RSS_ENDPOINTS): Promise<XLead[]>
     try {
       console.log(`📡 [X / TWITTER SCRAPER] Fetching Google News RSS query target: ${endpoint}`);
       const res = await fetch(endpoint, {
-        headers: X_SCRAPER_HEADERS
+        headers: X_SCRAPER_HEADERS,
+        signal: AbortSignal.timeout(10000)
       });
 
       if (!res.ok) {

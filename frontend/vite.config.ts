@@ -16,6 +16,16 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:3000',
         changeOrigin: true,
+        headers: {
+          'x-api-key': process.env.SYNCRO_SCALE_API_KEY || '',
+        },
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            if (process.env.SYNCRO_SCALE_API_KEY) {
+              proxyReq.setHeader('x-api-key', process.env.SYNCRO_SCALE_API_KEY);
+            }
+          });
+        },
       },
     },
   },

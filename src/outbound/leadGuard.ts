@@ -1,20 +1,24 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
+import * as fs from 'fs';
 import crypto from 'crypto';
 
 export class LeadGuard {
  private db: Database.Database;
 
  constructor() {
- // Sets up a single database binary file right in your root directory
- const dbPath = process.env.NODE_ENV === 'production'
-  ? '/tmp/syncro_scale.db'
-  : path.join(__dirname, '../../syncro_scale.db');
+  const dbPath = process.env.DB_PATH || (
+    process.env.DATA_DIR
+      ? path.join(process.env.DATA_DIR, 'syncro_scale.db')
+      : path.join(__dirname, '../../syncro_scale.db')
+  );
 
-this.db = new Database(dbPath);
- this.db.pragma('journal_mode = WAL');
- this.db.pragma('synchronous = NORMAL');
- this.initializeSchema();
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+
+  this.db = new Database(dbPath);
+  this.db.pragma('journal_mode = WAL');
+  this.db.pragma('synchronous = NORMAL');
+  this.initializeSchema();
  }
 
  /**
