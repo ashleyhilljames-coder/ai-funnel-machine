@@ -15221,5 +15221,18 @@
     "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
     "suggested_reply": "",
     "processedAt": "2026-09-28T09:49:32.823Z"
+  },
+  {
+    "id": "CBMiQ0FVX3lxTE85anVRemN1aXBGRHpwblNVREFueFNNaEJ1Q0V3ZXhRdUJybldjWmJlZFBhS3dHWjJzZFNyS0lhNjk3U00",
+    "title": "Trinity Votes 🇮🇱🇺🇦 (@TrinityMustache) - x.com",
+    "link": "https://news.google.com/rss/articles/CBMiQ0FVX3lxTE85anVRemN1aXBGRHpwblNVREFueFNNaEJ1Q0V3ZXhRdUJybldjWmJlZFBhS3dHWjJzZFNyS0lhNjk3U00?oc=5",
+    "source": "X / Twitter",
+    "date": "2026-09-23T07:00:00.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Score 0% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-09-28T09:51:10.931Z"
   }
 ]
