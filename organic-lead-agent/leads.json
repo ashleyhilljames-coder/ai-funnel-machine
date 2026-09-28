@@ -15195,5 +15195,18 @@
     "summary": "Filtered out by intent rules: Rejected: Post is older than 14 days (336 hours) (19380.0h old)",
     "suggested_reply": "",
     "processedAt": "2026-09-28T03:37:52.176Z"
+  },
+  {
+    "id": "webhook-1790584468346-33abi",
+    "title": "Ashley Butler",
+    "link": "webhook-1790584468346-33abi",
+    "source": "Facebook Group",
+    "date": "2026-09-28T08:34:27.044Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0.45,
+    "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-09-28T08:34:28.447Z"
   }
 ]
