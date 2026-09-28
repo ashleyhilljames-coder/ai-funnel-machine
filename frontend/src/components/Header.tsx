@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PhoneCall, ShieldAlert, Zap, Clock, CheckCircle2 } from 'lucide-react';
+import { PhoneCall, ShieldAlert, Zap, Clock, CheckCircle2, LayoutDashboard } from 'lucide-react';
 import { DISPATCH_PHONE_DISPLAY, DISPATCH_PHONE_TEL, SITE_CONFIG } from '../config/site';
 
 interface HeaderProps {
@@ -74,6 +74,13 @@ export const Header: React.FC<HeaderProps> = () => {
 
           {/* Right Header Controls: Call Hotline */}
           <div className="flex items-center gap-3">
+            <a
+              href="/?view=desktop"
+              title="Staff Mission Control"
+              className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80 rounded-xl transition-colors"
+            >
+              <LayoutDashboard className="w-5 h-5" />
+            </a>
             <a
               href={DISPATCH_PHONE_TEL}
               className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5"

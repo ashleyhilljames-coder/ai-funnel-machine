@@ -106,6 +106,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLegalModal }) => {
             >
               Terms of Emergency Service
             </button>
+
+            <a
+              href="/?view=desktop"
+              className="text-slate-400 hover:text-emerald-400 underline transition-colors"
+            >
+              Staff Mission Control
+            </a>
           </div>
         </div>
 

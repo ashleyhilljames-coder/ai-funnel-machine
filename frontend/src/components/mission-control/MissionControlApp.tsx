@@ -157,10 +157,19 @@ export const MissionControlApp: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile offline status badge */}
-            <div className="md:hidden flex items-center gap-1.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span className="text-[10px] font-bold text-slate-400">{isOnline ? 'Online' : 'Offline'}</span>
+            <div className="flex items-center gap-3">
+              <a
+                href="/"
+                className="text-xs font-semibold text-slate-400 hover:text-sky-400 transition-colors flex items-center gap-1"
+              >
+                ← Homeowner Site
+              </a>
+
+              {/* Mobile offline status badge */}
+              <div className="md:hidden flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span className="text-[10px] font-bold text-slate-400">{isOnline ? 'Online' : 'Offline'}</span>
+              </div>
             </div>
           </div>
 
@@ -294,3 +303,5 @@ export const MissionControlApp: React.FC = () => {
     </div>
   );
 };
+
+export default MissionControlApp;
