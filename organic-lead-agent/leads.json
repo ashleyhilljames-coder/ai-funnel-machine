@@ -15208,5 +15208,18 @@
     "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
     "suggested_reply": "",
     "processedAt": "2026-09-28T08:34:28.447Z"
+  },
+  {
+    "id": "webhook-1790588972691-126b0",
+    "title": "Ashley Butler",
+    "link": "webhook-1790588972691-126b0",
+    "source": "Facebook Group",
+    "date": "2026-09-28T09:49:32.182Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0.45,
+    "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-09-28T09:49:32.823Z"
   }
 ]

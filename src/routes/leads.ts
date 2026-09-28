@@ -134,6 +134,25 @@ router.post('/create', apiKeyAuth, async (req, res) => {
 
     const finalLeadId = supabaseData?.id ? String(supabaseData.id) : generatedLeadId;
 
+    // Connect workflow: create job in Mission Control SQLite DB for immediate dispatch board visibility
+    try {
+      missionDb.createJob({
+        id: finalLeadId.startsWith('JOB-') ? finalLeadId : `JOB-${finalLeadId}`,
+        homeowner_name,
+        homeowner_phone,
+        email: email || '',
+        address: property_address || 'Las Vegas, NV',
+        damage_type: damage_type || 'Water Damage',
+        water_source: water_source || '',
+        affected_rooms: affected_rooms || '',
+        notes: combinedNotes || notes || '',
+        stage: 'NEW_INTAKE',
+        referral_source: 'Landing Page Intake',
+      });
+    } catch (mcErr) {
+      console.warn('Mission Control SQLite DB insertion warning:', mcErr);
+    }
+
     // Trigger instant Resend emergency notification email if API key present
     let resendEmailStatus = 'skipped';
     let resendEmailId: string | undefined = undefined;
