@@ -15299,5 +15299,18 @@
     "summary": "Filtered out by intent rules: Rejected: Score 45% below 85% threshold or missing location/damage context",
     "suggested_reply": "",
     "processedAt": "2026-09-28T14:56:39.121Z"
+  },
+  {
+    "id": "https://www.craigslist.org/view/d/las-vegas-when-disaster-strikes-we/6c43mRTg7yTHYCrwFXvipb",
+    "title": "💧 WHEN DISASTER STRIKES, WE BRING LIFE BACK TO YOUR PROPERTY. 🏠\n\n                \n                    $0\n                    \n                        Las Vegas, NV",
+    "link": "https://www.craigslist.org/view/d/las-vegas-when-disaster-strikes-we/6c43mRTg7yTHYCrwFXvipb",
+    "source": "Craigslist",
+    "date": "2026-09-28T16:21:57.000Z",
+    "is_valid_lead": false,
+    "urgency_level": "Low",
+    "intentScore": 0,
+    "summary": "Filtered out by intent rules: Rejected: Score 0% below 85% threshold or missing location/damage context",
+    "suggested_reply": "",
+    "processedAt": "2026-09-28T16:21:57.169Z"
   }
 ]
