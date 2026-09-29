@@ -28,14 +28,14 @@ export function toE164Phone(phone: string): string {
 // POST /api/leads/create
 router.post('/create', apiKeyAuth, async (req, res) => {
   try {
-    const rawName = req.body?.fullName || req.body?.homeowner_name || req.body?.name;
+    const rawName = req.body?.fullName || req.body?.full_name || req.body?.name || req.body?.homeowner_name;
     const rawPhone = req.body?.phone || req.body?.homeowner_phone;
     const rawEmail = req.body?.email;
     const rawAddress = req.body?.address || req.body?.property_address;
-    const rawDamage = req.body?.emergencyType || req.body?.damage_type;
+    const rawDamage = req.body?.emergencyType || req.body?.emergency_type || req.body?.damage_type;
     const rawSource = req.body?.waterSource || req.body?.damage_source;
     const rawRooms = req.body?.affectedRooms || req.body?.affected_rooms;
-    const rawNotes = req.body?.description || req.body?.notes;
+    const rawNotes = req.body?.notes || req.body?.description;
     const rawPlumber = req.body?.plumber_id;
 
     const rawMethod = req.body?.preferredContactMethod || req.body?.preferred_contact_method || 'sms';
@@ -138,19 +138,19 @@ router.post('/create', apiKeyAuth, async (req, res) => {
     try {
       missionDb.createJob({
         id: finalLeadId.startsWith('JOB-') ? finalLeadId : `JOB-${finalLeadId}`,
-        homeowner_name,
-        homeowner_phone,
-        email: email || '',
-        address: property_address || 'Las Vegas, NV',
-        damage_type: damage_type || 'Water Damage',
-        water_source: water_source || '',
-        affected_rooms: affected_rooms || '',
-        notes: combinedNotes || notes || '',
+        homeowner_name: homeowner_name || req.body?.full_name || req.body?.name || req.body?.homeowner_name || 'Homeowner',
+        homeowner_phone: homeowner_phone || req.body?.phone || req.body?.homeowner_phone || '',
+        email: email || req.body?.email || '',
+        address: property_address || req.body?.address || 'Address Pending',
+        damage_type: damage_type || req.body?.emergency_type || req.body?.damage_type || 'Water Damage',
+        water_source: water_source || req.body?.waterSource || '',
+        affected_rooms: affected_rooms || req.body?.affectedRooms || '',
+        notes: combinedNotes || req.body?.notes || req.body?.description || '',
         stage: 'NEW_INTAKE',
-        referral_source: 'Landing Page Intake',
+        referral_source: 'Landing Page Direct Intake'
       });
-    } catch (mcErr) {
-      console.warn('Mission Control SQLite DB insertion warning:', mcErr);
+    } catch (err) {
+      console.error('[MissionControl] Failed to dual-write job to SQLite:', err);
     }
 
     // Trigger instant Resend emergency notification email if API key present

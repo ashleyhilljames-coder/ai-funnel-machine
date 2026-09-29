@@ -179,7 +179,11 @@ export class MissionControlDb {
     this.seedInitialDataIfEmpty();
   }
 
-  private seedInitialDataIfEmpty() {
+  public seedInitialJobs(): void {
+    this.seedInitialDataIfEmpty();
+  }
+
+  public seedInitialDataIfEmpty() {
     const countObj = this.db.prepare('SELECT COUNT(*) as count FROM mc_jobs').get() as { count: number };
     if (countObj.count === 0) {
       console.log('🌱 Seeding Mission Control Emergency Restoration Mock Data...');
@@ -439,6 +443,7 @@ export class MissionControlDb {
 
   // --- JOB METHODS ---
   public getJobs(): MissionJob[] {
+    this.seedInitialJobs();
     const stmt = this.db.prepare('SELECT * FROM mc_jobs ORDER BY created_at DESC');
     return stmt.all() as MissionJob[];
   }

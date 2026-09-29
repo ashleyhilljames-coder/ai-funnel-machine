@@ -14,12 +14,12 @@ async function runVerification() {
   const server = http.createServer(app);
 
   await new Promise<void>((resolve) => {
-    server.listen(0, () => resolve());
+    server.listen(0, '127.0.0.1', () => resolve());
   });
 
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : 3000;
-  const baseUrl = `http://localhost:${port}`;
+  const baseUrl = `http://127.0.0.1:${port}`;
 
   let createdLeadId: number | null = null;
 
@@ -107,7 +107,7 @@ async function runVerification() {
 
     console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY!');
   } catch (err: any) {
-    console.error('❌ Verification failed:', err.message);
+    console.error('❌ Verification failed:', err);
     process.exitCode = 1;
   } finally {
     if (createdLeadId) {

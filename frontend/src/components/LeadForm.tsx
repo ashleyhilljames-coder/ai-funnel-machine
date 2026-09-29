@@ -111,7 +111,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmitted }) => {
       });
 
       const data = await response.json();
-      if (data?.success && data?.leadId) {
+      if ((response.status === 200 || response.status === 201 || response.ok) && data?.success && data?.leadId) {
         finalLeadId = data.leadId.startsWith('#') ? data.leadId : `#RHR-${data.leadId}`;
       }
     } catch (err) {
